@@ -56,11 +56,19 @@ AVCaptureStillImageOutput* imageOutput;
                                                  
                                                  NSData *data = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
                                                  UIImage *image = [UIImage imageWithData:data];
-                                                 UIImage* resizedImage = [self resizeImage:image rect:self.view.bounds];
                                                  
-                                                 // サムネイルを作ってイベント発行
-                                                 TiBlob* image_blob = [[[TiBlob alloc] initWithImage:resizedImage] autorelease];
-                                                 NSDictionary *dic = @{@"image":image_blob, @"key2":@"value2"};
+                                                 // 送信用データ(縦1096pxサイズ)を作成
+                                                 UIImage* content_img = [self resizeImage:image rect:self.view.bounds];
+                                                 NSData* content_data = UIImageJPEGRepresentation( content_img, 0.1 );
+                                                 TiBlob* content_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
+                                                 
+                                                 // サムネイルのjpegデータを作成
+                                                 UIImage* thumbnail_img = [self resizeImage:image rect:self.view.bounds];
+                                                 NSData *thumbnail_data = UIImageJPEGRepresentation( thumbnail_img, 0.1 );
+                                                 TiBlob* thumbnail_blob = [[[TiBlob alloc] initWithData:thumbnail_data mimetype:@"image/jpeg"] autorelease];
+                                                 
+                                                 // イベント発行
+                                                 NSDictionary *dic = @{@"content":content_blob, @"thumbnail":thumbnail_blob, @"key2":@"value2"};
                                                  [self fireEvent:@"shutter" withObject:dic];
                                                  
                                                  
