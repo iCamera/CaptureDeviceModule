@@ -55,6 +55,9 @@ AVCaptureStillImageOutput* imageOutput;
                                              completionHandler:^( CMSampleBufferRef imageDataSampleBuffer, NSError *error ){
                                                  NSLog( @"シャッターを切りました" );
                                                  
+                                                 // イベント発行
+                                                 [self fireEvent:@"shutter" withObject:nil];
+                                                 
                                                  NSData *data = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
                                                  UIImage *image = [UIImage imageWithData:data];
                                                  
@@ -71,7 +74,7 @@ AVCaptureStillImageOutput* imageOutput;
                                                  
                                                  // イベント発行
                                                  NSDictionary *dic = @{@"content":content_blob, @"thumbnail":thumbnail_blob, @"key2":@"value2"};
-                                                 [self fireEvent:@"shutter" withObject:dic];
+                                                 [self fireEvent:@"imageProcessed" withObject:dic];
                                                  
                                                  
                                                  ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
