@@ -57,14 +57,14 @@ AVCaptureStillImageOutput* imageOutput;
                                                  NSData *data = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
                                                  UIImage *image = [UIImage imageWithData:data];
                                                  
-                                                 // 送信用データ(縦1096pxサイズ)を作成
-                                                 UIImage* content_img = [self resizeImage:image rect:self.view.bounds];
-                                                 NSData* content_data = UIImageJPEGRepresentation( content_img, 0.1 );
+                                                 // 送信用データ(縦852pxサイズ)を作成
+                                                 UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 640, 852)];
+                                                 NSData* content_data = UIImageJPEGRepresentation( content_img, 0.8 );
                                                  TiBlob* content_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
                                                  
                                                  // サムネイルのjpegデータを作成
-                                                 UIImage* thumbnail_img = [self resizeImage:image rect:self.view.bounds];
-                                                 NSData *thumbnail_data = UIImageJPEGRepresentation( thumbnail_img, 0.1 );
+                                                 UIImage* thumbnail_img = [self resizeImage:content_img rect:self.view.bounds];
+                                                 NSData *thumbnail_data = UIImageJPEGRepresentation( thumbnail_img, 0.8 );
                                                  TiBlob* thumbnail_blob = [[[TiBlob alloc] initWithData:thumbnail_data mimetype:@"image/jpeg"] autorelease];
                                                  
                                                  // イベント発行
