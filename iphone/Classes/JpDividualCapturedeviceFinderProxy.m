@@ -50,6 +50,11 @@ AVCaptureStillImageOutput* imageOutput;
 
 -(void)takePhoto:(id)args{
     NSLog( @"takePhoto" );
+    
+    ENSURE_SINGLE_ARG( args, NSDictionary );
+    NSLog( @"%@", args );
+    NSNumber* saveToDevice = [args objectForKey:@"saveToDevice"];
+    
 	AVCaptureConnection *connection = [[imageOutput connections] lastObject];
 	[imageOutput captureStillImageAsynchronouslyFromConnection:connection
                                              completionHandler:^( CMSampleBufferRef imageDataSampleBuffer, NSError *error ){
@@ -76,9 +81,10 @@ AVCaptureStillImageOutput* imageOutput;
                                                  NSDictionary *dic = @{@"content":content_blob, @"thumbnail":thumbnail_blob, @"key2":@"value2"};
                                                  [self fireEvent:@"imageProcessed" withObject:dic];
                                                  
-                                                 
-                                                 ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
-                                                 [library writeImageToSavedPhotosAlbum:image.CGImage orientation:image.imageOrientation completionBlock:^(NSURL *assetURL, NSError *error){}];
+                                                 if( [saveToDevice isEqualToNumber:@1] ){
+                                                     ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
+                                                     [library writeImageToSavedPhotosAlbum:image.CGImage orientation:image.imageOrientation completionBlock:^(NSURL *assetURL, NSError *error){}];
+                                                 }
                                              }
      ];
 }
