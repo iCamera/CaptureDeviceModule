@@ -15,8 +15,11 @@
 
 BOOL captureStarted = false;
 AVCaptureDevice* captureDevice;
+AVCaptureSession* captureSession;
 AVCaptureVideoPreviewLayer* previewLayer;
 AVCaptureStillImageOutput* imageOutput;
+AVCaptureDeviceInput* frontFacingCameraDeviceInput;// 前面カメラ
+AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 
 
 
@@ -31,9 +34,41 @@ AVCaptureStillImageOutput* imageOutput;
 }
 
 
+// フロントカメラに切り替え
+-(void)changeToFrontCamera:(id)args{
+    // カメラを取得して初期化
+    AVCaptureDeviceInput* front;
+    NSError *error = nil;
+    NSArray *devices = [AVCaptureDevice devices];
+    for (AVCaptureDevice *device in devices) {
+        if ([device hasMediaType:AVMediaTypeVideo]) {
+            if( [device position] == AVCaptureDevicePositionFront ){
+                front = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
+            }
+        }
+    }
+    NSLog( @"%@", front );
+    NSLog( @"%@", captureSession.inputs[0] );
+
+    
+    [captureSession beginConfiguration];
+    [captureSession removeInput:captureSession.inputs[0]];
+    [captureSession addInput:front];
+    [captureSession commitConfiguration];
+}
+
+// バックカメラに切り替え
+-(void)changeToBackCamera:(id)args{
+    [captureSession beginConfiguration];
+    [captureSession removeInput:frontFacingCameraDeviceInput];
+    [captureSession addInput:backFacingCameraDeviceInput];
+    [captureSession commitConfiguration];
+}
+
+
 // 露出とフォーカスを指定した座標( 0〜1.0 )に合わせる
 - (void)focusAndExposureAtPoint:(id)args{
-    NSLog( @"CapturedeviceFinderProxy focusAtPoint" );
+    NSLog( @"CapturedeviceFinderProxy focusAndExposureAtPoint" );
     
     // JavaScript からわたってきたパラメータを解釈
     ENSURE_SINGLE_ARG( args, NSDictionary );
@@ -120,20 +155,33 @@ AVCaptureStillImageOutput* imageOutput;
     NSLog( @"CapturedeviceFinderProxy viewDidAttach" );
     //    self.view.backgroundColor = [UIColor redColor];
     
+    // カメラを取得して初期化
+    NSError *error = nil;
+    NSArray *devices = [AVCaptureDevice devices];
+    for (AVCaptureDevice *device in devices) {
+        NSLog(@"Device name: %@", [device localizedName]);
+        if ([device hasMediaType:AVMediaTypeVideo]) {
+            if( [device position] == AVCaptureDevicePositionBack ){
+                NSLog(@"Device position : back");
+                backFacingCameraDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
+//                captureDevice = device;
+            } else {
+                NSLog(@"Device position : front");
+                frontFacingCameraDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
+                NSLog(@"error=%@",error);
+            }
+        }
+    }
+    NSLog( @"%@", frontFacingCameraDeviceInput );
+    
     captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
     
-    // 入力の初期化
-    NSError *error = nil;
-    AVCaptureInput *videoInput = [AVCaptureDeviceInput deviceInputWithDevice:captureDevice error:&error];
-    if (!videoInput) {
-        NSLog(@"ERROR:%@", error);
-        return;
-    }
+
     // セッション初期化
-    AVCaptureSession* captureSession = [[AVCaptureSession alloc] init];
-    [captureSession addInput:videoInput];
+    captureSession = [[AVCaptureSession alloc] init];
     [captureSession beginConfiguration];
+    [captureSession addInput:backFacingCameraDeviceInput];
     captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
     [captureSession commitConfiguration];
     
@@ -149,6 +197,9 @@ AVCaptureStillImageOutput* imageOutput;
     
     // セッション開始
     [captureSession startRunning];
+    
+    NSLog( @"%@", frontFacingCameraDeviceInput );
+
 }
 
 
