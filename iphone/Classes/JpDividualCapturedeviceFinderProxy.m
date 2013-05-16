@@ -14,43 +14,68 @@
 @implementation JpDividualCapturedeviceFinderProxy
 
 BOOL captureStarted = false;
+AVCaptureDevice* captureDevice;
 AVCaptureVideoPreviewLayer* previewLayer;
 AVCaptureStillImageOutput* imageOutput;
 
 
 
 -(void)frameSizeChanged:(CGRect)frame bounds:(CGRect)bounds {
-	NSLog( @"frameSizeChanged in proxy %@ %@", NSStringFromCGRect(frame), NSStringFromCGRect(bounds) );
+	NSLog( @"CapturedeviceFinderProxy frameSizeChanged in proxy %@ %@", NSStringFromCGRect(frame), NSStringFromCGRect(bounds) );
     previewLayer.frame = bounds;
 }
 
 
 -(void)start:(id)args{
-	NSLog( @"started" );
+	NSLog( @"CapturedeviceFinderProxy started" );
 }
 
-// UIView を UIImage に draw
-- (UIImage *)drawViewToImage:(UIView *)source_view{
-    UIGraphicsBeginImageContext(source_view.frame.size);
-    [source_view.layer renderInContext:UIGraphicsGetCurrentContext()];
-    UIImage *screenImage = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return screenImage;
+
+// 露出とフォーカスを指定した座標( 0〜1.0 )に合わせる
+- (void)focusAndExposureAtPoint:(id)args{
+    NSLog( @"CapturedeviceFinderProxy focusAtPoint" );
+    
+    // JavaScript からわたってきたパラメータを解釈
+    ENSURE_SINGLE_ARG( args, NSDictionary );
+    NSLog( @"%@", args );
+    NSNumber* px = [args objectForKey:@"x"];
+    NSNumber* py = [args objectForKey:@"y"];
+    CGPoint point = CGPointMake( px.floatValue, py.floatValue );
+    
+    AVCaptureDevice *device = captureDevice;
+    if ([device isFocusPointOfInterestSupported] && [device isFocusModeSupported:AVCaptureFocusModeAutoFocus]) {
+        NSError *error;
+        if ([device lockForConfiguration:&error]) {
+            // フォーカス
+            [device setFocusPointOfInterest:point];
+            [device setFocusMode:AVCaptureFocusModeAutoFocus];
+            
+            // 露出
+            [device setExposurePointOfInterest:point];
+            [device setExposureMode:AVCaptureExposureModeContinuousAutoExposure];
+            
+            [device unlockForConfiguration];
+        }
+    }
 }
 
-//UIImageをリサイズするクラス
-- (UIImage*)resizeImage:(UIImage *)img rect:(CGRect)rect{
-    UIGraphicsBeginImageContext(rect.size);
-    [img drawInRect:rect];
-    UIImage* resizedImage = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return resizedImage;
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
+    NSLog( @"CapturedeviceFinderProxy observeValueForKeyPath:%@", keyPath );
+    if ([keyPath isEqual:@"adjustingFocus"]) {
+        if ([[change objectForKey:NSKeyValueChangeNewKey] boolValue] == NO) {
+            // イベント発行
+            [self fireEvent:@"focusComplete" withObject:nil];
+        }
+    }
 }
+
+
 
 
 -(void)takePhoto:(id)args{
-    NSLog( @"takePhoto" );
+    NSLog( @"CapturedeviceFinderProxy takePhoto" );
     
+    // JavaScript からわたってきたパラメータを解釈
     ENSURE_SINGLE_ARG( args, NSDictionary );
     NSLog( @"%@", args );
     NSNumber* saveToDevice = [args objectForKey:@"saveToDevice"];
@@ -72,8 +97,8 @@ AVCaptureStillImageOutput* imageOutput;
                                                  TiBlob* content_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
                                                  
                                                  // サムネイルのjpegデータを作成
-//                                                 UIImage* thumbnail_img = [self resizeImage:content_img rect:CGRectMake(0, 0, 150, 150)];
-                                                 UIImage* thumbnail_img = [self imageByScalingAndCropping:content_img ForSize:CGSizeMake(150, 150)];
+                                                 UIImage* thumbnail_img = [self resizeImage:content_img rect:CGRectMake(0, 0, 150, 200)];
+//                                                 UIImage* thumbnail_img = [self imageByScalingAndCropping:content_img ForSize:CGSizeMake(150, 150)];
                                                  NSData *thumbnail_data = UIImageJPEGRepresentation( thumbnail_img, 0.8 );
                                                  TiBlob* thumbnail_blob = [[[TiBlob alloc] initWithData:thumbnail_data mimetype:@"image/jpeg"] autorelease];
                                                  
@@ -89,12 +114,15 @@ AVCaptureStillImageOutput* imageOutput;
      ];
 }
 
+
+
 -(void)viewDidAttach{
-    NSLog( @"viewDidAttach!!!!!" );
+    NSLog( @"CapturedeviceFinderProxy viewDidAttach" );
     //    self.view.backgroundColor = [UIColor redColor];
     
+    captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+    [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
     
-    AVCaptureDevice *captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     // 入力の初期化
     NSError *error = nil;
     AVCaptureInput *videoInput = [AVCaptureDeviceInput deviceInputWithDevice:captureDevice error:&error];
@@ -121,6 +149,46 @@ AVCaptureStillImageOutput* imageOutput;
     
     // セッション開始
     [captureSession startRunning];
+}
+
+
+
+-(void)viewWillAttach{
+    NSLog( @"CapturedeviceFinderProxy viewWillAttach" );
+}
+
+-(void)willChangeLayout{
+    NSLog( @"CapturedeviceFinderProxy willChangeLayout" );
+}
+
+-(void)willChangePosition{
+    NSLog( @"CapturedeviceFinderProxy willChangePosition" );
+}
+
+-(void)willChangeSize{
+    NSLog( @"CapturedeviceFinderProxy willChangeSize" );    
+}
+
+
+
+
+
+// UIView を UIImage に draw
+- (UIImage *)drawViewToImage:(UIView *)source_view{
+    UIGraphicsBeginImageContext(source_view.frame.size);
+    [source_view.layer renderInContext:UIGraphicsGetCurrentContext()];
+    UIImage *screenImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return screenImage;
+}
+
+//UIImageをリサイズするクラス
+- (UIImage*)resizeImage:(UIImage *)img rect:(CGRect)rect{
+    UIGraphicsBeginImageContext(rect.size);
+    [img drawInRect:rect];
+    UIImage* resizedImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return resizedImage;
 }
 
 
@@ -182,22 +250,6 @@ AVCaptureStillImageOutput* imageOutput;
 }
 
 
-
--(void)viewWillAttach{
-    NSLog( @"viewWillAttach!!!!!" );
-}
-
--(void)willChangeLayout{
-    NSLog( @"willChangeLayout!!!!!" );
-}
-
--(void)willChangePosition{
-    NSLog( @"willChangePosition" );
-}
-
--(void)willChangeSize{
-    NSLog( @"willChangeSize" );    
-}
 
 
 @end
