@@ -73,6 +73,40 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 }
 
 
+-(void)_setInput:(AVCaptureDeviceInput*)input{
+    
+}
+
+
+
+// flash オン
+-(void)setFlashModeOn:(id)args{
+    [self _setFlashMode:AVCaptureFlashModeOn];
+}
+// flash オフ
+-(void)setFlashModeOff:(id)args{
+    [self _setFlashMode:AVCaptureFlashModeOff];
+}
+// flash オート
+-(void)setFlashModeAuto:(id)args{
+    [self _setFlashMode:AVCaptureFlashModeAuto];
+}
+
+
+
+// flashモード設定 内部処理
+-(void)_setFlashMode:(AVCaptureFlashMode)flashMode{
+    if( [captureDevice isFlashModeSupported:flashMode] ){
+        NSError *error;
+        if( [captureDevice lockForConfiguration:&error] ){
+            captureDevice.flashMode = flashMode;
+            [captureDevice unlockForConfiguration];
+        }
+    }
+}
+
+
+
 // 露出とフォーカスを指定した座標( 0〜1.0 )に合わせる
 - (void)focusAndExposureAtPoint:(id)args{
     NSLog( @"CapturedeviceFinderProxy focusAndExposureAtPoint" );
@@ -101,6 +135,8 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
     }
 }
 
+
+// フォーカス完了時にイベント発行
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
     NSLog( @"CapturedeviceFinderProxy observeValueForKeyPath:%@", keyPath );
     if ([keyPath isEqual:@"adjustingFocus"]) {
