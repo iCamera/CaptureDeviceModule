@@ -33,27 +33,34 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 	NSLog( @"CapturedeviceFinderProxy started" );
 }
 
-
-// フロントカメラに切り替え
--(void)changeToFrontCamera:(id)args{
+-(void)_updateInputDevice{
     // カメラを取得して初期化
-    AVCaptureDeviceInput* front;
     NSError *error = nil;
     NSArray *devices = [AVCaptureDevice devices];
     for (AVCaptureDevice *device in devices) {
+        NSLog(@"Device name: %@", [device localizedName]);
         if ([device hasMediaType:AVMediaTypeVideo]) {
-            if( [device position] == AVCaptureDevicePositionFront ){
-                front = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
+            if( [device position] == AVCaptureDevicePositionBack ){
+                NSLog(@"Device position : back");
+                backFacingCameraDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
+            } else {
+                NSLog(@"Device position : front");
+                frontFacingCameraDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
             }
         }
     }
-    NSLog( @"%@", front );
+}
+
+
+// フロントカメラに切り替え
+-(void)changeToFrontCamera:(id)args{
+    [self _updateInputDevice];
+    NSLog( @"%@", frontFacingCameraDeviceInput );
     NSLog( @"%@", captureSession.inputs[0] );
 
-    
     [captureSession beginConfiguration];
     [captureSession removeInput:captureSession.inputs[0]];
-    [captureSession addInput:front];
+    [captureSession addInput:frontFacingCameraDeviceInput];
     [captureSession commitConfiguration];
 }
 
@@ -157,31 +164,15 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
     
     // カメラを取得して初期化
     NSError *error = nil;
-    NSArray *devices = [AVCaptureDevice devices];
-    for (AVCaptureDevice *device in devices) {
-        NSLog(@"Device name: %@", [device localizedName]);
-        if ([device hasMediaType:AVMediaTypeVideo]) {
-            if( [device position] == AVCaptureDevicePositionBack ){
-                NSLog(@"Device position : back");
-                backFacingCameraDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
-//                captureDevice = device;
-            } else {
-                NSLog(@"Device position : front");
-                frontFacingCameraDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
-                NSLog(@"error=%@",error);
-            }
-        }
-    }
-    NSLog( @"%@", frontFacingCameraDeviceInput );
     
     captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
-    
+    AVCaptureDeviceInput *videoInput = [AVCaptureDeviceInput deviceInputWithDevice:captureDevice error:&error];
 
     // セッション初期化
     captureSession = [[AVCaptureSession alloc] init];
     [captureSession beginConfiguration];
-    [captureSession addInput:backFacingCameraDeviceInput];
+    [captureSession addInput:videoInput];
     captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
     [captureSession commitConfiguration];
     
@@ -197,9 +188,6 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
     
     // セッション開始
     [captureSession startRunning];
-    
-    NSLog( @"%@", frontFacingCameraDeviceInput );
-
 }
 
 

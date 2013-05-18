@@ -213,8 +213,10 @@ if __name__ == '__main__':
 	config = read_ti_xcconfig()
 
 	sdk = find_sdk(config)
+	print sdk
 	sys.path.insert(0,os.path.join(sdk,'iphone'))
 	sys.path.append(os.path.join(sdk, "common"))
+
 
 	compile_js(manifest,config)
 	build_module(manifest,config)
