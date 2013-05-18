@@ -55,8 +55,6 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 // フロントカメラに切り替え
 -(void)changeToFrontCamera:(id)args{
     [self _updateInputDevice];
-    NSLog( @"%@", frontFacingCameraDeviceInput );
-    NSLog( @"%@", captureSession.inputs[0] );
 
     [captureSession beginConfiguration];
     [captureSession removeInput:captureSession.inputs[0]];
@@ -66,8 +64,10 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 
 // バックカメラに切り替え
 -(void)changeToBackCamera:(id)args{
+    [self _updateInputDevice];
+    
     [captureSession beginConfiguration];
-    [captureSession removeInput:frontFacingCameraDeviceInput];
+    [captureSession removeInput:captureSession.inputs[0]];
     [captureSession addInput:backFacingCameraDeviceInput];
     [captureSession commitConfiguration];
 }
