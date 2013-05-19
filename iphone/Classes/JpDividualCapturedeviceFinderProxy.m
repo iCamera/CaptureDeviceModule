@@ -33,8 +33,9 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 	NSLog( @"CapturedeviceFinderProxy started" );
 }
 
+
+// カメラを取得
 -(void)_updateInputDevice{
-    // カメラを取得して初期化
     NSError *error = nil;
     NSArray *devices = [AVCaptureDevice devices];
     for (AVCaptureDevice *device in devices) {
@@ -54,27 +55,23 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 
 // フロントカメラに切り替え
 -(void)changeToFrontCamera:(id)args{
-    [self _updateInputDevice];
-
-    [captureSession beginConfiguration];
-    [captureSession removeInput:captureSession.inputs[0]];
-    [captureSession addInput:frontFacingCameraDeviceInput];
-    [captureSession commitConfiguration];
+    [self _updateInputDevice];// 毎回呼ぶ必要あり
+    [self _setInput:frontFacingCameraDeviceInput];
 }
 
 // バックカメラに切り替え
 -(void)changeToBackCamera:(id)args{
-    [self _updateInputDevice];
-    
-    [captureSession beginConfiguration];
-    [captureSession removeInput:captureSession.inputs[0]];
-    [captureSession addInput:backFacingCameraDeviceInput];
-    [captureSession commitConfiguration];
+    [self _updateInputDevice];// 毎回呼ぶ必要あり
+    [self _setInput:backFacingCameraDeviceInput];
 }
 
 
--(void)_setInput:(AVCaptureDeviceInput*)input{
-    
+// カメラ切り替え 内部処理
+-(void)_setInput:(AVCaptureDeviceInput*)input{    
+    [captureSession beginConfiguration];
+    [captureSession removeInput:captureSession.inputs[0]];
+    [captureSession addInput:input];
+    [captureSession commitConfiguration];
 }
 
 
