@@ -13,7 +13,7 @@
 
 @implementation JpDividualCapturedeviceFinderProxy
 
-BOOL captureStarted = false;
+BOOL initialized = false;
 AVCaptureDevice* captureDevice;
 AVCaptureSession* captureSession;
 AVCaptureVideoPreviewLayer* previewLayer;
@@ -193,6 +193,11 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 
 -(void)viewDidAttach{
     NSLog( @"CapturedeviceFinderProxy viewDidAttach" );
+    if( initialized ){
+        NSLog( @"CapturedeviceFinderProxy 初期化済みです。" );
+        return;
+    }
+    initialized = YES;
     //    self.view.backgroundColor = [UIColor redColor];
     
     // カメラを取得して初期化
