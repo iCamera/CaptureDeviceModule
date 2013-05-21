@@ -13,13 +13,14 @@
 
 @implementation JpDividualCapturedeviceFinderProxy
 
-BOOL initialized = false;
+BOOL initialized = NO;
 AVCaptureDevice* captureDevice;
 AVCaptureSession* captureSession;
 AVCaptureVideoPreviewLayer* previewLayer;
 AVCaptureStillImageOutput* imageOutput;
 AVCaptureDeviceInput* frontFacingCameraDeviceInput;// 前面カメラ
 AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
+BOOL frontCameraMode = NO;
 
 
 
@@ -57,12 +58,14 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 -(void)changeToFrontCamera:(id)args{
     [self _updateInputDevice];// 毎回呼ぶ必要あり
     [self _setInput:frontFacingCameraDeviceInput];
+    frontCameraMode = YES;
 }
 
 // バックカメラに切り替え
 -(void)changeToBackCamera:(id)args{
     [self _updateInputDevice];// 毎回呼ぶ必要あり
     [self _setInput:backFacingCameraDeviceInput];
+    frontCameraMode = NO;
 }
 
 
@@ -165,6 +168,12 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
                                                  
                                                  NSData *data = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
                                                  UIImage *image = [UIImage imageWithData:data];
+                                                 
+                                                 // フロントカメラならフリップ
+                                                 if( frontCameraMode ){
+                                                     NSLog( @"フリップします" );
+                                                     image = [UIImage imageWithCGImage:image.CGImage scale:1.0 orientation: UIImageOrientationLeftMirrored];
+                                                 }
                                                  
                                                  // 送信用データ(縦852pxサイズ)を作成
                                                  UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 640, 852)];
