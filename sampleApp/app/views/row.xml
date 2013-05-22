@@ -1,0 +1,8 @@
+<Alloy>
+    <TableViewRow id="row" layout="horizontal" height="105dp">
+		<Require id="thumbView1" src="thumbView" />
+		<Require id="thumbView2" src="thumbView" />
+		<Require id="thumbView3" src="thumbView" />
+		<Require id="thumbView4" src="thumbView" />
+    </TableViewRow>
+</Alloy>

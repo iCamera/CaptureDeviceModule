@@ -1,0 +1,15 @@
+<Alloy>
+	<View id="view" top="4dp" left="4dp" width="75dp" height="Ti.UI.FILL" layout="vertical">
+
+		<Button>
+			<ImageView id="imageView" top="0" left="0" width="75dp" height="75dp" />
+		</Button>
+
+		<Label id="name_txt" left="0" text="hoge" color="#999" />
+
+	    <View layout="horizontal" width="Ti.UI.FILL" height="24dp" touchEnabled="false">
+	    	<Label id="readCount_txt" height="10dp" right="5dp" text="閲覧:3" color="#999" />
+		</View>
+
+    </View>
+</Alloy>

@@ -1,0 +1,31 @@
+<Alloy>
+	<Window class="window" backgroundColor="#fff">
+
+		<View layout="absolute" height="Ti.UI.FILL">
+
+<!-- 			<TableView id="tableView" dataCollection="Entries" dataFilter="dataFilter" top="0" bottom="320dp" width="Ti.UI.FILL">
+				<Require src="row"/>
+			</TableView>
+ -->
+
+			<ListView id="listView" top="0" bottom="320dp" />
+
+			<View left="0" bottom="0" width="Ti.UI.FILL" height="320dp" id="camera_view" backgroundColor="#ddd">
+				<View right="0" width="100dp" layout="vertical">
+					<Button title="前カメラ" onClick="changeToFrontCamera" />
+					<Button title="後カメラ" onClick="changeToBackCamera" />
+					<Button title="shutter" onClick="shutter" />
+					<Button title="FlashON" onClick="setFlashModeOn" />
+					<Button title="FlashOFF" onClick="setFlashModeOff" />
+					<Button title="FlashAUTO" onClick="setFlashModeAuto" />
+				</View>
+				<!-- <ImageView id="iris_iv" height="320"> -->
+			</View>
+		</View>
+
+		<Button top="0" left="0" title="open" onClick="open" />
+		<Button top="0" right="0" title="close" onClick="close" />
+
+
+	</Window>
+</Alloy>
