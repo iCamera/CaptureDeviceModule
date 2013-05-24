@@ -175,6 +175,9 @@ BOOL frontCameraMode = NO;
                                                      image = [UIImage imageWithCGImage:image.CGImage scale:1.0 orientation: UIImageOrientationLeftMirrored];
                                                  }
                                                  
+                                                 // オリジナルのblobを作成
+                                                 TiBlob* original_blob = [[[TiBlob alloc] initWithData:data mimetype:@"image/jpeg"] autorelease];
+                                                 
                                                  // 送信用データ(縦852pxサイズ)を作成
                                                  UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 640, 852)];
                                                  NSData* content_data = UIImageJPEGRepresentation( content_img, 0.8 );
@@ -187,7 +190,7 @@ BOOL frontCameraMode = NO;
                                                  TiBlob* thumbnail_blob = [[[TiBlob alloc] initWithData:thumbnail_data mimetype:@"image/jpeg"] autorelease];
                                                  
                                                  // イベント発行
-                                                 NSDictionary *dic = @{@"content":content_blob, @"thumbnail":thumbnail_blob, @"key2":@"value2"};
+                                                 NSDictionary *dic = @{@"original":original_blob, @"content":content_blob, @"thumbnail":thumbnail_blob, @"key2":@"value2"};
                                                  [self fireEvent:@"imageProcessed" withObject:dic];
                                                  
                                                  if( [saveToDevice isEqualToNumber:@1] ){
