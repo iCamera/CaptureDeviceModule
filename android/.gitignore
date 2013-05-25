@@ -1,5 +1,8 @@
 tmp
 bin
 build
+build.properties
+dist/*.jar
+libs/*/*.so
 *.zip
 .apt_generated
