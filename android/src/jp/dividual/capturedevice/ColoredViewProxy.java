@@ -7,7 +7,7 @@ import org.appcelerator.titanium.view.TiUIView;
 
 import android.app.Activity;
 
-@Kroll.proxy(creatableInModule=ColoredViewModule.class)
+@Kroll.proxy(creatableInModule=CaptureDeviceModule.class)
 public class ColoredViewProxy extends TiViewProxy
 {
 	private ColoredView coloredView;

@@ -1,3 +1,4 @@
+/* -*- tab-width: 4; indent-tabs-mode: t; -*- */
 package jp.dividual.capturedevice;
 
 import java.util.List;

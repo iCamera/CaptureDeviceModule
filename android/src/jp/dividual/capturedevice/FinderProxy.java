@@ -1,3 +1,4 @@
+/* -*- tab-width: 4; indent-tabs-mode: t; -*- */
 package jp.dividual.capturedevice;
 
 import org.appcelerator.kroll.annotations.Kroll;
@@ -7,13 +8,13 @@ import org.appcelerator.titanium.view.TiUIView;
 
 import android.app.Activity;
 
-@Kroll.proxy(creatableInModule=ColoredViewModule.class)
+@Kroll.proxy(creatableInModule=CaptureDeviceModule.class)
 public class FinderProxy extends TiViewProxy
 {
 	private FinderView finderView;
 
 	/*	
-	public ColoredViewProxy(TiContext tiContext) {
+	public FinderProxy(TiContext tiContext) {
 		super.TiViewProxy(tiContext);
 	}
 	*/
