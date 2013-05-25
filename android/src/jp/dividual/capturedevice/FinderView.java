@@ -8,6 +8,7 @@ import org.appcelerator.kroll.KrollFunction;
 import org.appcelerator.kroll.KrollObject;
 import org.appcelerator.kroll.common.Log;
 import org.appcelerator.titanium.TiApplication;
+import org.appcelerator.titanium.TiBlob;
 import org.appcelerator.titanium.TiC;
 import org.appcelerator.titanium.proxy.TiViewProxy;
 import org.appcelerator.titanium.view.TiUIView;
@@ -40,6 +41,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 	private CameraLayout cameraLayout;
 	private boolean previewRunning = false;
 	private int currentRotation;
+	private PictureCallback jpegCallback;
 
 	public static TiViewProxy overlayProxy = null;
 	public static FinderView finderView = null;
@@ -71,7 +73,40 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 			onError(MediaModule.UNKNOWN_ERROR, "Unable to access the first back-facing camera.");
 			//finish();
 		}
-		
+
+		jpegCallback = new PictureCallback() {
+				public void onPictureTaken(byte[] data, Camera camera) {
+					if (saveToPhotoGallery) {
+						//saveToPhotoGallery(data);
+					}
+
+					TiBlob imageData = TiBlob.blobFromData(data);
+					KrollDict dict = CaptureDeviceModule.createDictForImage(imageData, "image/jpeg");
+					fireEvent(CaptureDeviceModule.EVENT_IMAGE_PROCESSED, dict);
+
+					//cancelCallback = null;
+					//cameraActivity.finish();
+				}
+			};
+	}
+
+	public void takePhoto()
+	{
+		String focusMode = camera.getParameters().getFocusMode();
+		if (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
+			.equals(Parameters.FOCUS_MODE_INFINITY))) {
+			AutoFocusCallback focusCallback = new AutoFocusCallback()
+			{
+				public void onAutoFocus(boolean success, Camera camera)
+				{
+					// Take the picture when the camera auto focus completes.
+					camera.takePicture(null, null, jpegCallback);
+				}
+			};
+			camera.autoFocus(focusCallback);
+		} else {
+			camera.takePicture(null, null, jpegCallback);
+		}
 	}
 
 	public void surfaceChanged(SurfaceHolder previewHolder, int format, int width, int height)
@@ -221,5 +256,4 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 		camera.stopPreview();
 		previewRunning = false;
 	}
-
 }
