@@ -1,0 +1,18 @@
+#
+# this is your module manifest and used by Titanium
+# during compilation, packaging, distribution, etc.
+#
+version: 1.0
+apiversion: 2
+description: My module
+author: dividual
+license: Specify your license
+copyright: dividual
+
+
+# these should not be edited
+name: android
+moduleid: jp.dividual.capturedevice
+guid: e5ecc9d5-14e7-470a-93ca-e35e7b88a36c
+platform: android
+minsdk: 3.1.0.GA
