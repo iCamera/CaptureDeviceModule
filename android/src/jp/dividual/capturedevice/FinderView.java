@@ -76,6 +76,8 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 
 		jpegCallback = new PictureCallback() {
 				public void onPictureTaken(byte[] data, Camera camera) {
+					camera.startPreview();
+
 					if (saveToPhotoGallery) {
 						//saveToPhotoGallery(data);
 					}
