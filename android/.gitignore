@@ -6,3 +6,5 @@ dist/*.jar
 libs/*/*.so
 *.zip
 .apt_generated
+.classpath
+

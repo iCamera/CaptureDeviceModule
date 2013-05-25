@@ -6,7 +6,7 @@
 1. [Android NDK][2] をインストールします。
 1. Titanium Studio の File > Import... → Existing Mobile Project →
 [Next] → このファイルがある android フォルダを選択 → [Finish]
-1. `build.properties.sample` を `build.properties` にコピーして、パス
+1. `build.properties.sample` を `build.properties` に、 `classpath.sample` を `.classpath` にコピーして、パス
 を自分の環境に合わせます。`~` は使えないようです。
 
 [1]: http://docs.appcelerator.com/titanium/latest/#!/guide/Installing_the_Java_Development_Tools
