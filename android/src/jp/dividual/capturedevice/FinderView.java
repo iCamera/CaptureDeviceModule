@@ -37,13 +37,11 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 	private static final String TAG = "FinderView";
 	private static Camera camera;
 
-	private TiViewProxy localOverlayProxy = null;
 	private CameraLayout cameraLayout;
 	private boolean previewRunning = false;
 	private int currentRotation;
 	private PictureCallback jpegCallback;
 
-	public static TiViewProxy overlayProxy = null;
 	public static FinderView finderView = null;
 
 	public static KrollObject callbackContext;
@@ -54,10 +52,6 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 		super(proxy);		
 
 		Context context = proxy.getActivity();
-
-		// set preview overlay
-		localOverlayProxy = overlayProxy;
-		overlayProxy = null; // clear the static object once we have a local reference
 
 		// set overall layout - will populate in onResume
 		cameraLayout = new CameraLayout(context);

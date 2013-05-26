@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 public class CameraLayout extends FrameLayout {
 	private static final String TAG = "CameraLayout";
 
+	private TiViewProxy localOverlayProxy = null;
 	private SurfaceView preview;
 	private PreviewLayout previewLayout;
 
@@ -75,9 +76,14 @@ public class CameraLayout extends FrameLayout {
 		SurfaceHolder previewHolder = preview.getHolder();
 		previewHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
+		// set preview overlay
+		localOverlayProxy = overlayProxy;
+		overlayProxy = null; // clear the static object once we have a local reference
+
+		// set overall layout - will populate in onAttachedToWindow
 		previewLayout = new PreviewLayout(context);
-		setBackgroundColor(Color.BLACK);
-		addView(previewLayout, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT,
+		this.setBackgroundColor(Color.BLACK);
+		this.addView(previewLayout, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT,
 			LayoutParams.MATCH_PARENT, Gravity.CENTER));
 	}
 
@@ -135,17 +141,19 @@ public class CameraLayout extends FrameLayout {
 	@Override
 	protected void onAttachedToWindow () {
 		previewLayout.addView(preview, new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
-		/*
-		this.addView(localOverlayProxy.getOrCreateView().getNativeView(), new FrameLayout.LayoutParams(
-			LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
-		*/
+		if (localOverlayProxy != null) {
+			previewLayout.addView(localOverlayProxy.getOrCreateView().getNativeView(),
+						 new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+		}
 	}
 
 	@Override
 	protected void onDetachedFromWindow()
 	{
 		previewLayout.removeView(preview);
-		//cameraLayout.removeView(localOverlayProxy.getOrCreateView().getNativeView());
+		if (localOverlayProxy != null) {
+			previewLayout.removeView(localOverlayProxy.getOrCreateView().getNativeView());
+		}
 	}
 
 }

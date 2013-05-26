@@ -71,4 +71,12 @@ public class FinderProxy extends TiViewProxy
 	@Kroll.method
 	public void changeToBackCamera() {
 	}
+
+	/**
+	 * You must set the overlay view proxy before adding to a parent view.
+	 */
+	@Kroll.setProperty @Kroll.method
+	public void setOverlay(TiViewProxy proxy) {
+		CameraLayout.overlayProxy = proxy;
+	}
 }
