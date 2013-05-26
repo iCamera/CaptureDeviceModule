@@ -9,6 +9,8 @@ import org.appcelerator.titanium.proxy.TiViewProxy;
 import org.appcelerator.titanium.view.TiUIView;
 
 import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.hardware.Camera.Parameters;
 
 @Kroll.proxy(creatableInModule=CaptureDeviceModule.class)
 public class FinderProxy extends TiViewProxy
@@ -49,19 +51,30 @@ public class FinderProxy extends TiViewProxy
 
 	@Kroll.method
 	public boolean getHasFlash() {
-		return true;
+		return this.getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
 	}
 
 	@Kroll.method
 	public void setFlashModeAuto() {
+		this.setFlashMode(Parameters.FLASH_MODE_AUTO);
 	}
 
 	@Kroll.method
 	public void setFlashModeOff() {
+		this.setFlashMode(Parameters.FLASH_MODE_OFF);
 	}
 
 	@Kroll.method
 	public void setFlashModeOn() {
+		this.setFlashMode(Parameters.FLASH_MODE_ON);
+	}
+
+	private void setFlashMode(String value) {
+		if (FinderView.finderView != null) {
+			FinderView.finderView.setFlashMode(value);
+		} else {
+			Log.w(TAG, "Camera preview is not open, unable to set params");
+		}
 	}
 
 	@Kroll.method

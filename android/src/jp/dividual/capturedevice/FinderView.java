@@ -1,6 +1,7 @@
 /* -*- tab-width: 4; indent-tabs-mode: t; -*- */
 package jp.dividual.capturedevice;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.appcelerator.kroll.KrollDict;
@@ -84,6 +85,26 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 					//cameraActivity.finish();
 				}
 			};
+	}
+
+	public void setFlashMode(String value) {
+		Parameters param = FinderView.camera.getParameters();
+		List<String> supportedFlashModes = param.getSupportedFlashModes();
+		if (supportedFlashModes == null) {
+			Log.d(TAG, "Camera has no flash", Log.DEBUG_MODE);
+			return;
+		}
+		if (!supportedFlashModes.contains(value)) {
+			if (value == Parameters.FLASH_MODE_ON && supportedFlashModes.contains(Parameters.FLASH_MODE_TORCH)) {
+				value = Parameters.FLASH_MODE_TORCH;
+			} else {
+				Log.d(TAG, "Camera flash mode is not supported: " + value + "(" + Arrays.toString(supportedFlashModes.toArray()) + ")", Log.DEBUG_MODE);
+				return;
+			}
+		}
+		param.setFlashMode(value);
+		FinderView.camera.setParameters(param);
+		Log.d(TAG, "Set camera flash mode to: " + value, Log.DEBUG_MODE);
 	}
 
 	public void takePhoto()
