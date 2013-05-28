@@ -10,6 +10,7 @@
 //
 // Alloy.Globals.someGlobalFunction = function(){};
 
+Alloy.Globals.isAndroid = /android/i.test(Ti.Platform.osname);
 Alloy.Collections.Entries = Alloy.createCollection('Entry');
 
 
