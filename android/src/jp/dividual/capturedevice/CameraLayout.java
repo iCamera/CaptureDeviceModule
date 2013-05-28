@@ -11,11 +11,8 @@ import android.graphics.Color;
 import android.hardware.Camera.Size;
 
 import android.content.Context;
-import android.view.Gravity;
-import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.SurfaceHolder;
-import android.widget.FrameLayout;
 
 public class CameraLayout extends TiCompositeLayout {
 	private static final String TAG = "CameraLayout";

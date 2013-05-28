@@ -1,10 +1,12 @@
 /* -*- tab-width: 4; indent-tabs-mode: t; -*- */
 package jp.dividual.capturedevice;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.kroll.common.Log;
-import org.appcelerator.titanium.TiContext;
 import org.appcelerator.titanium.proxy.TiViewProxy;
 import org.appcelerator.titanium.view.TiUIView;
 
@@ -47,8 +49,15 @@ public class FinderProxy extends TiViewProxy
 	}
 
 	@Kroll.method
-	public Object[] getDevices() {
-		return null;
+	public String[] getDevices() {
+		List<String> devices = new ArrayList<String>();
+		if (CaptureDeviceModule.isBackCameraSupported()) {
+			devices.add(CaptureDeviceModule.CAMERA_DEVICE_BACK);
+		}
+		if (CaptureDeviceModule.isFrontCameraSupported()) {
+			devices.add(CaptureDeviceModule.CAMERA_DEVICE_FRONT);
+		}
+		return devices.toArray(new String[devices.size()]);
 	}
 
 	@Kroll.method

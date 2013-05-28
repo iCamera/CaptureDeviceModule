@@ -5,11 +5,15 @@ import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.KrollModule;
 import org.appcelerator.kroll.annotations.Kroll;
 
+import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.titanium.TiBlob;
 import org.appcelerator.titanium.TiContext;
 
+import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
+import android.os.Build;
 
 import ti.modules.titanium.media.MediaModule;
 
@@ -26,14 +30,60 @@ public class CaptureDeviceModule extends KrollModule
 	public static final String EVENT_PROPERTY_CONTENT = "content";
 	public static final String EVENT_PROPERTY_THUMBNAIL = "thumbnail";
 
+	public static final String CAMERA_DEVICE_BACK = "back";
+	public static final String CAMERA_DEVICE_FRONT = "front";
+
+	public static final String CAMERA_PROPERTY_CAMERA_ID_SAMSUNG = "camera-id";
+
 	protected static final String FEATURE_CAMERA_FRONT = "android.hardware.camera.front"; // Needed until api 9 is our minimum supported.
 
 	public static int frontCameraId = -1;
 	public static int backCameraId = -1;
+	public static Boolean hasFroyoFrontCamera = null;
 
 	public CaptureDeviceModule(TiContext tiContext) {
 		super(tiContext);
-		this.scanCameras();
+		// Multiple cameras are supported only above froyo
+		if (isGingerbread()) {
+			this.scanCameraIds();
+		}
+	}
+
+	public static boolean isFroyo() {
+		return Build.VERSION.SDK_INT <= Build.VERSION_CODES.FROYO;
+	}
+
+	public static boolean isGingerbread() {
+		return !isFroyo();
+	}
+
+	public static boolean isFrontCameraSupported() {
+		if (CaptureDeviceModule.isFroyo()) {
+			if (CaptureDeviceModule.hasFroyoFrontCamera == null) {
+				Camera camera = Camera.open();
+				Camera.Parameters params = camera.getParameters();
+				params.set(CaptureDeviceModule.CAMERA_PROPERTY_CAMERA_ID_SAMSUNG, 2);
+				try {
+					camera.setParameters(params);
+					CaptureDeviceModule.hasFroyoFrontCamera = true;
+				} catch (RuntimeException e) {
+					CaptureDeviceModule.hasFroyoFrontCamera = false;
+				}
+			}
+			return CaptureDeviceModule.hasFroyoFrontCamera;
+		} else {
+			TiApplication appContext = TiApplication.getInstance();
+			Activity activity = appContext.getCurrentActivity();
+			PackageManager pm = activity.getPackageManager();
+			return pm.hasSystemFeature(CaptureDeviceModule.FEATURE_CAMERA_FRONT);
+		}
+	}
+
+	public static boolean isBackCameraSupported() {
+		TiApplication appContext = TiApplication.getInstance();
+		Activity activity = appContext.getCurrentActivity();
+		PackageManager pm = activity.getPackageManager();
+		return pm.hasSystemFeature(PackageManager.FEATURE_CAMERA);
 	}
 
 	public static KrollDict createDictForImage(TiBlob imageData, String mimeType) {
@@ -63,7 +113,7 @@ public class CaptureDeviceModule extends KrollModule
 		return d;
 	}
 
-	private void scanCameras() {
+	private void scanCameraIds() {
 		Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
 		for (int cameraIndex = 0; cameraIndex < Camera.getNumberOfCameras(); cameraIndex++) {
 			Camera.getCameraInfo(cameraIndex, cameraInfo);

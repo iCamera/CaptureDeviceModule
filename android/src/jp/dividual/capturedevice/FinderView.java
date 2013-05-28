@@ -18,24 +18,16 @@ import org.appcelerator.titanium.view.TiUIView;
 
 import ti.modules.titanium.media.MediaModule;
 
-import android.os.Build;
-import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Rect;
-import android.view.Gravity;
-import android.view.View;
 import android.view.Surface;
 import android.view.SurfaceHolder;
-import android.view.ViewGroup.LayoutParams;
-import android.widget.FrameLayout;
 
 
 public class FinderView extends TiUIView implements SurfaceHolder.Callback {
@@ -88,25 +80,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 	}
 
 	private void openCamera(int facing) {
-		boolean hasFront = this.isFrontCameraSupported();
-		boolean hasBack = this.isBackCameraSupported();
-		if (!hasFront && facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-			if (hasBack) {
-				facing = Camera.CameraInfo.CAMERA_FACING_BACK;
-			} else {
-				// TODO: notify error
-				return;
-			}
-		}
-		if (!hasBack && facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
-			if (hasFront) {
-				facing = Camera.CameraInfo.CAMERA_FACING_FRONT;
-			} else {
-				// TODO: notify error
-				return;
-			}
-		}
-		if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.FROYO) {
+		if (CaptureDeviceModule.isFroyo()) {
 			this.openCameraFroyo(facing);
 		} else {
 			this.openCameraGingerbread(facing);
@@ -124,12 +98,13 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 		if (facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
 			// Samsung Galaxy S/Tab
 			Parameters param = camera.getParameters();
-			param.set("camera-id", 2);
+			param.set(CaptureDeviceModule.CAMERA_PROPERTY_CAMERA_ID_SAMSUNG, 2);
 			try {
 				camera.setParameters(param);
 				currentFacing = facing;
 			} catch (RuntimeException e) {
-				// If we can't set front camera it means that device hasn't got "camera-id". Maybe it's not Galaxy S.
+				// If we can't set front camera it means that device
+				// hasn't got "camera-id". Maybe it's not a Galaxy S.
 				currentFacing = Camera.CameraInfo.CAMERA_FACING_BACK;
 			}
 		} else {
@@ -138,6 +113,25 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 	}
 
 	private void openCameraGingerbread(int facing) {
+		boolean hasFront = CaptureDeviceModule.isFrontCameraSupported();
+		boolean hasBack = CaptureDeviceModule.isBackCameraSupported();
+		if (!hasFront && facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+			if (hasBack) {
+				facing = Camera.CameraInfo.CAMERA_FACING_BACK;
+			} else {
+				// TODO: notify error
+				return;
+			}
+		}
+		if (!hasBack && facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+			if (hasFront) {
+				facing = Camera.CameraInfo.CAMERA_FACING_FRONT;
+			} else {
+				// TODO: notify error
+				return;
+			}
+		}
+
 		int cameraId;
 		if (facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
 			cameraId = CaptureDeviceModule.frontCameraId;
@@ -171,10 +165,6 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 	public void switchCamera(int facing) {
 		if (currentFacing == facing)
 			return;
-		if (!this.isFrontCameraSupported() || !this.isBackCameraSupported()) {
-			// can't switch
-			return;
-		}
 		this.releaseCamera();
 		this.openCamera(facing);
 		this.proxy.getActivity().runOnUiThread(new Runnable() {
@@ -185,16 +175,6 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 					resumePreview(layout.getSurfaceHolder());
 				}
 			});
-	}
-
-	public boolean isFrontCameraSupported() {
-		PackageManager pm = this.proxy.getActivity().getPackageManager();
-		return pm.hasSystemFeature(CaptureDeviceModule.FEATURE_CAMERA_FRONT);
-	}
-
-	public boolean isBackCameraSupported() {
-		PackageManager pm = this.proxy.getActivity().getPackageManager();
-		return pm.hasSystemFeature(PackageManager.FEATURE_CAMERA);
 	}
 
 	public void setFocusAreas(KrollDict options) {
