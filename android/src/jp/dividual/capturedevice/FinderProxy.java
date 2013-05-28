@@ -11,6 +11,7 @@ import org.appcelerator.titanium.view.TiUIView;
 import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.hardware.Camera.Parameters;
+import android.hardware.Camera.CameraInfo;
 
 @Kroll.proxy(creatableInModule=CaptureDeviceModule.class)
 public class FinderProxy extends TiViewProxy
@@ -79,10 +80,20 @@ public class FinderProxy extends TiViewProxy
 
 	@Kroll.method
 	public void changeToFrontCamera() {
+		this.setCamera(CameraInfo.CAMERA_FACING_FRONT);
 	}
 
 	@Kroll.method
 	public void changeToBackCamera() {
+		this.setCamera(CameraInfo.CAMERA_FACING_BACK);
+	}
+
+	private void setCamera(int facing) {
+		if (FinderView.finderView != null) {
+			FinderView.finderView.switchCamera(facing);
+		} else {
+			Log.w(TAG, "Camera preview is not open, unable to set params");
+		}
 	}
 
 	/**

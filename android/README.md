@@ -1,13 +1,16 @@
-# CaptureDeviceModule (android)
+# CaptureDeviceModule (Android)
 
 ## 下準備
 
+1. ``/path/to/android/sdk/tools/android sdk`` を実行し、Android 4.0 (API 14) の SDK Platform と Google APIs をインストールします。(*)
 1. [Java Development Tools][1] を Titanium Studio にインストールします。
 1. [Android NDK][2] をインストールします。
 1. Titanium Studio の File > Import... → Existing Mobile Project →
 [Next] → このファイルがある android フォルダを選択 → [Finish]
 1. `build.properties.sample` を `build.properties` に、 `classpath.sample` を `.classpath` にコピーして、パス
 を自分の環境に合わせます。`~` は使えないようです。
+
+(*) Android 4.0 以降でのみ使える API を利用するために必要です。
 
 [1]: http://docs.appcelerator.com/titanium/latest/#!/guide/Installing_the_Java_Development_Tools
 [2]: http://docs.appcelerator.com/titanium/latest/#!/guide/Installing_the_Android_NDK

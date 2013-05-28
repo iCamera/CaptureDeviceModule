@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.appcelerator.kroll.common.Log;
 import org.appcelerator.titanium.proxy.TiViewProxy;
+import org.appcelerator.titanium.view.TiCompositeLayout;
 
 import android.graphics.Color;
 import android.hardware.Camera.Size;
@@ -16,7 +17,7 @@ import android.view.SurfaceView;
 import android.view.SurfaceHolder;
 import android.widget.FrameLayout;
 
-public class CameraLayout extends FrameLayout {
+public class CameraLayout extends TiCompositeLayout {
 	private static final String TAG = "CameraLayout";
 
 	private TiViewProxy localOverlayProxy = null;
@@ -28,7 +29,7 @@ public class CameraLayout extends FrameLayout {
 
 	public static TiViewProxy overlayProxy = null;
 
-	private static class PreviewLayout extends FrameLayout
+	private static class PreviewLayout extends TiCompositeLayout
 	{
 		private double aspectRatio = 1;
 
@@ -83,12 +84,17 @@ public class CameraLayout extends FrameLayout {
 		// set overall layout - will populate in onAttachedToWindow
 		previewLayout = new PreviewLayout(context);
 		this.setBackgroundColor(Color.BLACK);
-		this.addView(previewLayout, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT,
-			LayoutParams.MATCH_PARENT, Gravity.CENTER));
+		/*		this.addView(previewLayout, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT,
+				LayoutParams.MATCH_PARENT, Gravity.CENTER));*/
+		this.addView(previewLayout);
 	}
 
 	public void addSurfaceCallback(SurfaceHolder.Callback callback) {
 		preview.getHolder().addCallback(callback);
+	}
+
+	public SurfaceHolder getSurfaceHolder() {
+		return preview.getHolder();
 	}
 
 	/**
@@ -140,10 +146,13 @@ public class CameraLayout extends FrameLayout {
 
 	@Override
 	protected void onAttachedToWindow () {
-		previewLayout.addView(preview, new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+		//		previewLayout.addView(preview, new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+		previewLayout.addView(preview);
 		if (localOverlayProxy != null) {
+			/*
 			previewLayout.addView(localOverlayProxy.getOrCreateView().getNativeView(),
-						 new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+			new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));*/
+			previewLayout.addView(localOverlayProxy.getOrCreateView().getNativeView());
 		}
 	}
 

@@ -16,6 +16,8 @@ import org.appcelerator.titanium.view.TiUIView;
 
 import ti.modules.titanium.media.MediaModule;
 
+import android.os.Build;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.hardware.Camera;
@@ -41,6 +43,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 	private CameraLayout cameraLayout;
 	private boolean previewRunning = false;
 	private int currentRotation;
+	private int currentFacing = Camera.CameraInfo.CAMERA_FACING_BACK;
 	private PictureCallback jpegCallback;
 
 	public static FinderView finderView = null;
@@ -61,13 +64,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 
 		finderView = this;
 
-		camera = Camera.open();
-		if (camera != null) {
-			CameraLayout.supportedPreviewSizes = camera.getParameters().getSupportedPreviewSizes();
-		} else {
-			onError(MediaModule.UNKNOWN_ERROR, "Unable to access the first back-facing camera.");
-			//finish();
-		}
+		this.openCamera(currentFacing);
 
 		jpegCallback = new PictureCallback() {
 				public void onPictureTaken(byte[] data, Camera camera) {
@@ -85,6 +82,67 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 					//cameraActivity.finish();
 				}
 			};
+	}
+
+	private void openCamera(int facing) {
+		boolean hasFront = this.isFrontCameraSupported();
+		boolean hasBack = this.isBackCameraSupported();
+		if (!hasFront && facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+			if (hasBack) {
+				facing = Camera.CameraInfo.CAMERA_FACING_BACK;
+			} else {
+				// TODO: notify error
+				return;
+			}
+		}
+		if (!hasBack && facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+			if (hasFront) {
+				facing = Camera.CameraInfo.CAMERA_FACING_FRONT;
+			} else {
+				// TODO: notify error
+				return;
+			}
+		}
+		if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.FROYO) {
+			this.openCameraFroyo(facing);
+		} else {
+			this.openCameraGingerbread(facing);
+		}
+		if (camera != null) {
+			CameraLayout.supportedPreviewSizes = camera.getParameters().getSupportedPreviewSizes();
+		} else {
+			onError(MediaModule.UNKNOWN_ERROR, "Unable to access the first back-facing camera.");
+			//finish();
+		}
+	}
+
+	private void openCameraFroyo(int facing) {
+		camera = Camera.open();
+		if (facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+			// Samsung Galaxy S/Tab
+			Parameters param = camera.getParameters();
+			param.set("camera-id", 2);
+			try {
+				camera.setParameters(param);
+				currentFacing = facing;
+			} catch (RuntimeException e) {
+				// If we can't set front camera it means that device hasn't got "camera-id". Maybe it's not Galaxy S.
+				currentFacing = Camera.CameraInfo.CAMERA_FACING_BACK;
+			}
+		} else {
+			currentFacing = facing;
+		}
+	}
+
+	private void openCameraGingerbread(int facing) {
+		int cameraId;
+		if (facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+			cameraId = CaptureDeviceModule.frontCameraId;
+		} else {
+			cameraId = CaptureDeviceModule.backCameraId;
+		}
+		camera = Camera.open(cameraId);
+		currentFacing = facing;
 	}
 
 	public void setFlashMode(String value) {
@@ -107,8 +165,36 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 		Log.d(TAG, "Set camera flash mode to: " + value, Log.DEBUG_MODE);
 	}
 
-	public void takePhoto()
-	{
+	public void switchCamera(int facing) {
+		if (currentFacing == facing)
+			return;
+		if (!this.isFrontCameraSupported() || !this.isBackCameraSupported()) {
+			// can't switch
+			return;
+		}
+		this.releaseCamera();
+		this.openCamera(facing);
+		this.proxy.getActivity().runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					CameraLayout layout = (CameraLayout) getNativeView();
+					updateCameraParameters();
+					resumePreview(layout.getSurfaceHolder());
+				}
+			});
+	}
+
+	public boolean isFrontCameraSupported() {
+		PackageManager pm = this.proxy.getActivity().getPackageManager();
+		return pm.hasSystemFeature(CaptureDeviceModule.FEATURE_CAMERA_FRONT);
+	}
+
+	public boolean isBackCameraSupported() {
+		PackageManager pm = this.proxy.getActivity().getPackageManager();
+		return pm.hasSystemFeature(PackageManager.FEATURE_CAMERA);
+	}
+
+	public void takePhoto() {
 		String focusMode = camera.getParameters().getFocusMode();
 		if (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
 			.equals(Parameters.FOCUS_MODE_INFINITY))) {
@@ -136,20 +222,18 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 		if (currentRotation == rotation && previewRunning) {
 			return;
 		}
-		if (previewRunning) {
-			try {
-				camera.stopPreview();
-			} catch (Exception e) {
-				// ignore: tried to stop a non=existent preview
-			}
-		}
-
+		this.pausePreview(previewHolder);
 		currentRotation = rotation;
+		this.updateCameraParameters();
+		this.resumePreview(previewHolder);
+	}
+
+	private void updateCameraParameters() {
 		Parameters param = camera.getParameters();
 		int orientation = TiApplication.getInstance().getResources().getConfiguration().orientation;
 		// The camera preview is always displayed in landscape mode. Need to rotate the preview according to
 		// the current orientation of the device.
-		switch (rotation) {
+		switch (currentRotation) {
 		case Surface.ROTATION_0:
 			if (orientation == Configuration.ORIENTATION_PORTRAIT) {
 				// The "natural" orientation of the device is a portrait orientation, eg. phones.
@@ -198,16 +282,6 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 			param.setPreviewSize(CameraLayout.optimalPreviewSize.width, CameraLayout.optimalPreviewSize.height);
 			camera.setParameters(param);
 		}
-
-		try {
-			camera.setPreviewDisplay(previewHolder);
-			previewRunning = true;
-			camera.startPreview();
-		} catch (Exception e) {
-			onError(MediaModule.UNKNOWN_ERROR, "Unable to setup preview surface: " + e.getMessage());
-			//finish();
-			return;
-		}
 	}
 
 	public void surfaceCreated(SurfaceHolder previewHolder)
@@ -227,27 +301,15 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 	// the built in camera will open
 	public void surfaceDestroyed(SurfaceHolder previewHolder)
 	{
-		stopPreview();
-		if (camera != null) {
-			camera.release();
-			camera = null;
-		}
+		this.releaseCamera();
 	}
 
 	@Override
 	public void release()
 	{
 		super.release();
-		stopPreview();
-
 		finderView = null;
-
-		try {
-			camera.release();
-			camera = null;
-		} catch (Throwable t) {
-			Log.d(TAG, "Camera is not open, unable to release", Log.DEBUG_MODE);
-		}
+		this.releaseCamera();
 	}
 
 	private static void onError(int code, String message)
@@ -262,6 +324,40 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 		dict.put(TiC.PROPERTY_MESSAGE, message);
 
 		errorCallback.callAsync(callbackContext, dict);
+	}
+
+	private void pausePreview(SurfaceHolder previewHolder) {
+		if (previewRunning) {
+			try {
+				camera.stopPreview();
+			} catch (Exception e) {
+				// ignore: tried to stop a non=existent preview
+			}
+		}
+	}
+
+	private void resumePreview(SurfaceHolder previewHolder) {
+		try {
+			camera.setPreviewDisplay(previewHolder);
+			previewRunning = true;
+			camera.startPreview();
+		} catch (Exception e) {
+			onError(MediaModule.UNKNOWN_ERROR, "Unable to setup preview surface: " + e.getMessage());
+			//finish();
+			return;
+		}
+	}
+
+	private void releaseCamera() {
+		stopPreview();
+		if (camera != null) {
+			try {
+				camera.release();
+				camera = null;
+			} catch (Throwable t) {
+				Log.d(TAG, "Camera is not open, unable to release", Log.DEBUG_MODE);
+			}
+		}
 	}
 
 	private void stopPreview()

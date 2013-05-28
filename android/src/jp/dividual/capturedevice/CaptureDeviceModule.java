@@ -9,6 +9,7 @@ import org.appcelerator.titanium.TiBlob;
 import org.appcelerator.titanium.TiContext;
 
 import android.graphics.BitmapFactory;
+import android.hardware.Camera;
 
 import ti.modules.titanium.media.MediaModule;
 
@@ -24,8 +25,14 @@ public class CaptureDeviceModule extends KrollModule
 	public static final String EVENT_PROPERTY_CONTENT = "content";
 	public static final String EVENT_PROPERTY_THUMBNAIL = "thumbnail";
 
+	protected static final String FEATURE_CAMERA_FRONT = "android.hardware.camera.front"; // Needed until api 9 is our minimum supported.
+
+	public static int frontCameraId = -1;
+	public static int backCameraId = -1;
+
 	public CaptureDeviceModule(TiContext tiContext) {
 		super(tiContext);
+		this.scanCameras();
 	}
 
 	public static KrollDict createDictForImage(TiBlob imageData, String mimeType) {
@@ -55,4 +62,16 @@ public class CaptureDeviceModule extends KrollModule
 		return d;
 	}
 
+	private void scanCameras() {
+		Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+		for (int cameraIndex = 0; cameraIndex < Camera.getNumberOfCameras(); cameraIndex++) {
+			Camera.getCameraInfo(cameraIndex, cameraInfo);
+			if (frontCameraId == -1 && cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+				frontCameraId = cameraIndex;
+			}
+			if (backCameraId == -1 && cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+				backCameraId = cameraIndex;
+			}
+		}		
+	}
 }
