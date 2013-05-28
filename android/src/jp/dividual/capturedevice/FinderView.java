@@ -20,9 +20,7 @@ import ti.modules.titanium.media.MediaModule;
 
 import android.content.res.Configuration;
 import android.hardware.Camera;
-import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
-import android.hardware.Camera.PictureCallback;
 
 import android.content.Context;
 import android.graphics.Rect;
@@ -30,7 +28,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 
 
-public class FinderView extends TiUIView implements SurfaceHolder.Callback {
+public class FinderView extends TiUIView implements SurfaceHolder.Callback, Camera.PictureCallback, Camera.ShutterCallback, Camera.AutoFocusCallback {
 
 	private static final String TAG = "FinderView";
 	private static Camera camera;
@@ -39,7 +37,6 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 	private boolean previewRunning = false;
 	private int currentRotation;
 	private int currentFacing = Camera.CameraInfo.CAMERA_FACING_BACK;
-	private PictureCallback jpegCallback;
 
 	public static FinderView finderView = null;
 
@@ -60,23 +57,6 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 		finderView = this;
 
 		this.openCamera(currentFacing);
-
-		jpegCallback = new PictureCallback() {
-				public void onPictureTaken(byte[] data, Camera camera) {
-					camera.startPreview();
-
-					if (saveToPhotoGallery) {
-						//saveToPhotoGallery(data);
-					}
-
-					TiBlob imageData = TiBlob.blobFromData(data);
-					KrollDict dict = CaptureDeviceModule.createDictForImage(imageData, "image/jpeg");
-					fireEvent(CaptureDeviceModule.EVENT_IMAGE_PROCESSED, dict);
-
-					//cancelCallback = null;
-					//cameraActivity.finish();
-				}
-			};
 	}
 
 	private void openCamera(int facing) {
@@ -257,18 +237,34 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 		String focusMode = camera.getParameters().getFocusMode();
 		if (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
 			.equals(Parameters.FOCUS_MODE_INFINITY))) {
-			AutoFocusCallback focusCallback = new AutoFocusCallback()
-			{
-				public void onAutoFocus(boolean success, Camera camera)
-				{
-					// Take the picture when the camera auto focus completes.
-					camera.takePicture(null, null, jpegCallback);
-				}
-			};
-			camera.autoFocus(focusCallback);
+			camera.autoFocus(this);
 		} else {
-			camera.takePicture(null, null, jpegCallback);
+			camera.takePicture(this, null, this);
 		}
+	}
+	
+	public void onAutoFocus(boolean success, Camera camera) {
+		// Take the picture when the camera auto focus completes.
+		camera.takePicture(this, null, this);
+	}
+
+	public void onShutter() {
+		fireEvent(CaptureDeviceModule.EVENT_SHUTTER, new KrollDict());
+	}
+
+	public void onPictureTaken(byte[] data, Camera camera) {
+		camera.startPreview();
+
+		if (saveToPhotoGallery) {
+			//saveToPhotoGallery(data);
+		}
+
+		TiBlob imageData = TiBlob.blobFromData(data);
+		KrollDict dict = CaptureDeviceModule.createDictForImage(imageData, "image/jpeg");
+		fireEvent(CaptureDeviceModule.EVENT_IMAGE_PROCESSED, dict);
+
+		//cancelCallback = null;
+		//cameraActivity.finish();
 	}
 
 	public void surfaceChanged(SurfaceHolder previewHolder, int format, int width, int height)

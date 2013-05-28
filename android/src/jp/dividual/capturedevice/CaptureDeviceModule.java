@@ -23,6 +23,7 @@ public class CaptureDeviceModule extends KrollModule
 	public static final float PHOTO_WIDTH_CONTENT = 640.0f;
 	public static final float PHOTO_WIDTH_THUMBNAIL = 150.0f;
 
+	public static final String EVENT_SHUTTER = "shutter";
 	public static final String EVENT_IMAGE_PROCESSED = "imageProcessed";
 	public static final String EVENT_FOCUS_COMPLETE = "focusComplete";
 
