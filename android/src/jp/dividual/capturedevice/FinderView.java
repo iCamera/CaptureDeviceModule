@@ -40,11 +40,13 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	private int currentRotation;
 	private int currentRotationDegrees = 0;
 	private int currentFacing = Camera.CameraInfo.CAMERA_FACING_BACK;
+	private List<String> supportedFlashModes = null;
+	private boolean focusAreaSupported = false;
+	private boolean meteringAreaSupported = false;
 
 	public static FinderView finderView = null;
 
 	public static KrollObject callbackContext;
-	public static KrollFunction successCallback, errorCallback, cancelCallback;
 	public static boolean saveToPhotoGallery = false;
 
 	public FinderView(TiViewProxy proxy) {
@@ -69,7 +71,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			this.openCameraGingerbread(facing);
 		}
 		if (camera != null) {
-			CameraLayout.supportedPreviewSizes = camera.getParameters().getSupportedPreviewSizes();
+			this.broadcastCapabilities();
 		} else {
 			onError(MediaModule.UNKNOWN_ERROR, "Unable to access the first back-facing camera.");
 			//finish();
@@ -125,9 +127,37 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		currentFacing = facing;
 	}
 
+	private void broadcastCapabilities() {
+		if (camera == null) {
+			return;
+		}
+
+		Parameters param = FinderView.camera.getParameters();
+		CameraLayout.supportedPreviewSizes = param.getSupportedPreviewSizes();
+		this.supportedFlashModes = param.getSupportedFlashModes();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+			this.focusAreaSupported = (param.getMaxNumFocusAreas() > 0
+									   && isSupported(Parameters.FOCUS_MODE_AUTO,
+													  param.getSupportedFocusModes()));
+			this.meteringAreaSupported = (param.getMaxNumMeteringAreas() > 0);
+		}
+		KrollDict dict = new KrollDict();
+		dict.put(CaptureDeviceModule.EVENT_PROPERTY_MANUAL_FOCUS, this.focusAreaSupported);
+		dict.put(CaptureDeviceModule.EVENT_PROPERTY_MANUAL_METERING, this.meteringAreaSupported);
+		if (this.supportedFlashModes != null) {
+			dict.put(CaptureDeviceModule.EVENT_PROPERTY_FLASH_MODES, this.supportedFlashModes.toArray(new String[this.supportedFlashModes.size()]));
+		} else {
+			dict.put(CaptureDeviceModule.EVENT_PROPERTY_FLASH_MODES, new String[0]);
+		}
+		fireEvent(CaptureDeviceModule.EVENT_CAMERA_OPEN, dict);
+	}
+
+    private boolean isSupported(String value, List<String> supported) {
+        return supported == null ? false : supported.indexOf(value) >= 0;
+    }
+
 	public void setFlashMode(String value) {
 		Parameters param = FinderView.camera.getParameters();
-		List<String> supportedFlashModes = param.getSupportedFlashModes();
 		if (supportedFlashModes == null) {
 			Log.d(TAG, "Camera has no flash", Log.DEBUG_MODE);
 			return;
@@ -162,10 +192,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 	public void setFocusAreas(KrollDict options) {
 		//Log.d("CAMERA!", options.toString());
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-			int maxNumFocusAreas = camera.getParameters().getMaxNumFocusAreas();
-			int maxNumMeteringAreas = camera.getParameters().getMaxNumMeteringAreas();
-
+		if (this.focusAreaSupported || this.meteringAreaSupported) {
 			/*
 			// output camera params
 			String focusMode = camera.getParameters().getFocusMode();
@@ -214,14 +241,14 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 			List<Camera.Area> focusList = new ArrayList<Camera.Area>();
 			focusList.add(new Camera.Area(new Rect(x1, y1, x2, y2), focusWeight));
-			if(maxNumFocusAreas > 0){
+			if(this.focusAreaSupported){
 				camera.getParameters().setFocusAreas(focusList);
 			}
-			if(maxNumMeteringAreas > 0){
+			if(this.meteringAreaSupported){
 				camera.getParameters().setMeteringAreas(focusList);
 			}
 
-			AutoFocusCallback focusCallback = new AutoFocusCallback(){
+			Camera.AutoFocusCallback focusCallback = new Camera.AutoFocusCallback(){
 				public void onAutoFocus(boolean success, Camera camera){
 					if(success){
 						Log.d("CAMERA!", "focusCallback success!!");
@@ -367,7 +394,6 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			camera.setPreviewDisplay(previewHolder);
 		} catch (Exception e) {
 			onError(MediaModule.UNKNOWN_ERROR, "Unable to setup preview surface: " + e.getMessage());
-			cancelCallback = null;
 			//finish();
 			return;
 		}
@@ -389,18 +415,12 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		this.releaseCamera();
 	}
 
-	private static void onError(int code, String message)
+	private void onError(int code, String message)
 	{
-		if (errorCallback == null) {
-			Log.e(TAG, message);
-			return;
-		}
-
 		KrollDict dict = new KrollDict();
 		dict.putCodeAndMessage(code, message);
 		dict.put(TiC.PROPERTY_MESSAGE, message);
-
-		errorCallback.callAsync(callbackContext, dict);
+		fireEvent(CaptureDeviceModule.EVENT_ERROR, dict);
 	}
 
 	private void pausePreview(SurfaceHolder previewHolder) {

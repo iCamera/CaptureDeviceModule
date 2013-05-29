@@ -49,13 +49,18 @@ public class CaptureDeviceModule extends KrollModule
 	public static final float PHOTO_WIDTH_CONTENT = 640.0f;
 	public static final float PHOTO_WIDTH_THUMBNAIL = 150.0f;
 
-	public static final String EVENT_SHUTTER = "shutter";
-	public static final String EVENT_IMAGE_PROCESSED = "imageProcessed";
-	public static final String EVENT_FOCUS_COMPLETE = "focusComplete";
+	@Kroll.constant public static final String EVENT_ERROR = "error";
+	@Kroll.constant public static final String EVENT_CAMERA_OPEN = "cameraOpen";
+	@Kroll.constant public static final String EVENT_SHUTTER = "shutter";
+	@Kroll.constant public static final String EVENT_IMAGE_PROCESSED = "imageProcessed";
+	@Kroll.constant public static final String EVENT_FOCUS_COMPLETE = "focusComplete";
 
-	public static final String EVENT_PROPERTY_ORIGINAL = "original";
-	public static final String EVENT_PROPERTY_CONTENT = "content";
-	public static final String EVENT_PROPERTY_THUMBNAIL = "thumbnail";
+	@Kroll.constant public static final String EVENT_PROPERTY_ORIGINAL = "original";
+	@Kroll.constant public static final String EVENT_PROPERTY_CONTENT = "content";
+	@Kroll.constant public static final String EVENT_PROPERTY_THUMBNAIL = "thumbnail";
+	@Kroll.constant public static final String EVENT_PROPERTY_MANUAL_FOCUS = "manualFocus";
+	@Kroll.constant public static final String EVENT_PROPERTY_MANUAL_METERING = "manualMetering";
+	@Kroll.constant public static final String EVENT_PROPERTY_FLASH_MODES = "flashModes";
 
 	public static final String CAMERA_DEVICE_BACK = "back";
 	public static final String CAMERA_DEVICE_FRONT = "front";
