@@ -268,18 +268,24 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		if(options.containsKey("saveToDevice")){
 			saveToPhotoGallery = TiConvert.toBoolean(options.get("saveToDevice"));
 		}
-		if(options.containsKey("lat")){
-			Double val = TiConvert.toDouble(options.get("lat"));
-			camera.getParameters().setGpsLatitude(val);
-			//Log.d("LATLON", String.format("lat: %f", val));
-		}
-		if(options.containsKey("lng")){
-			Double val = TiConvert.toDouble(options.get("lng"));
-			camera.getParameters().setGpsLongitude(val);
-			//Log.d("LATLON", String.format("log: %f", val));
+		Parameters param = camera.getParameters();
+		if(options.containsKey("lat") && options.containsKey("lng")){
+			param.removeGpsData();
+			param.setGpsTimestamp(System.currentTimeMillis() / 1000);
+			param.setGpsAltitude(0);
+
+			Double lat = TiConvert.toDouble(options.get("lat"));
+			param.setGpsLatitude(lat);
+			//Log.d(TAG, String.format("lat: %f", lat));
+
+			Double lng = TiConvert.toDouble(options.get("lng"));
+			param.setGpsLongitude(lng);
+			//Log.d(TAG, String.format("log: %f", lng));
+
+			camera.setParameters(param);
 		}
 
-		String focusMode = camera.getParameters().getFocusMode();
+		String focusMode = param.getFocusMode();
 		if (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
 			.equals(Parameters.FOCUS_MODE_INFINITY))) {
 			camera.autoFocus(this);
@@ -287,7 +293,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			camera.takePicture(this, null, this);
 		}
 	}
-	
+
 	public void onAutoFocus(boolean success, Camera camera) {
 		// Take the picture when the camera auto focus completes.
 		camera.takePicture(this, null, this);
