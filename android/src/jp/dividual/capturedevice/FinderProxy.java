@@ -33,6 +33,7 @@ public class FinderProxy extends TiViewProxy
 
 	@Kroll.method
 	public void focusAndExposureAtPoint(KrollDict options) {
+		FinderView.finderView.setFocusAreas(options);
 	}
 
 	@Kroll.method

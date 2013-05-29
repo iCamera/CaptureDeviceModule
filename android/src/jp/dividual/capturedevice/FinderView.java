@@ -3,6 +3,7 @@ package jp.dividual.capturedevice;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
 
 import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.KrollFunction;
@@ -12,6 +13,7 @@ import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.titanium.TiBlob;
 import org.appcelerator.titanium.TiC;
 import org.appcelerator.titanium.proxy.TiViewProxy;
+import org.appcelerator.titanium.util.TiConvert;
 import org.appcelerator.titanium.view.TiUIView;
 
 import ti.modules.titanium.media.MediaModule;
@@ -27,6 +29,7 @@ import android.hardware.Camera.PictureCallback;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Surface;
@@ -192,6 +195,26 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 	public boolean isBackCameraSupported() {
 		PackageManager pm = this.proxy.getActivity().getPackageManager();
 		return pm.hasSystemFeature(PackageManager.FEATURE_CAMERA);
+	}
+
+	public void setFocusAreas(KrollDict options) {
+		//Log.d("CAMERA!", options.toString());
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH && camera.getParameters().getMaxNumFocusAreas() > 0) {
+			Double xd = TiConvert.toDouble(options.get("y"));
+			Double yd = TiConvert.toDouble(options.get("x"));
+			int x = (int)((2000 * (1 - xd)) - 1000);
+			int y = (int)((2000 * yd) - 1000);
+
+			Log.d("CAMERA!x", Integer.toString(x));
+			Log.d("CAMERA!y", Integer.toString(y));
+
+			Rect rect = new Rect(x, y, x, y);
+			List focus = new ArrayList();
+			focus.add(new Camera.Area(rect, 1));
+			camera.getParameters().setFocusAreas(focus);
+			//camera.autoFocus(null);
+			//fireEvent(CaptureDeviceModule.EVENT_FOCUS_COMPLETE, new KrollDict());
+		}
 	}
 
 	public void takePhoto() {
