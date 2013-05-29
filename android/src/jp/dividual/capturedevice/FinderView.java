@@ -199,21 +199,77 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback {
 
 	public void setFocusAreas(KrollDict options) {
 		//Log.d("CAMERA!", options.toString());
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH && camera.getParameters().getMaxNumFocusAreas() > 0) {
-			Double xd = TiConvert.toDouble(options.get("y"));
-			Double yd = TiConvert.toDouble(options.get("x"));
-			int x = (int)((2000 * (1 - xd)) - 1000);
-			int y = (int)((2000 * yd) - 1000);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+			int maxNumFocusAreas = camera.getParameters().getMaxNumFocusAreas();
+			int maxNumMeteringAreas = camera.getParameters().getMaxNumMeteringAreas();
 
-			Log.d("CAMERA!x", Integer.toString(x));
-			Log.d("CAMERA!y", Integer.toString(y));
+			/*
+			// output camera params
+			String focusMode = camera.getParameters().getFocusMode();
+			Log.d("CAMERA!", String.format("focusMode:%s focusAreas:%d meteringAreas:%d", focusMode, maxNumFocusAreas, maxNumMeteringAreas));
+			List<String> supportedFocusModes = camera.getParameters().getSupportedFocusModes();
+			if(supportedFocusModes != null){
+				for(String fm: supportedFocusModes){
+					Log.d("CAMERA!", String.format("fm:%s", fm));
+				}
+			}
+			*/
 
-			Rect rect = new Rect(x, y, x, y);
-			List focus = new ArrayList();
-			focus.add(new Camera.Area(rect, 1));
-			camera.getParameters().setFocusAreas(focus);
-			//camera.autoFocus(null);
-			//fireEvent(CaptureDeviceModule.EVENT_FOCUS_COMPLETE, new KrollDict());
+			Double xd = TiConvert.toDouble(options.get("x"));
+			Double yd = TiConvert.toDouble(options.get("y"));
+			int minArea = -1000;
+			int maxArea = 1000;
+			int areaSize = maxArea - minArea;
+			int focusSize = 10;
+			int x1 = (int)((areaSize * xd) - (areaSize / 2)) - (focusSize / 2);
+			int y1 = (int)((areaSize * yd) - (areaSize / 2)) - (focusSize / 2);
+
+			//Log.d("CAMERA!", String.format("yd:%f y1:%d areaSize:%d focusSize:%d", yd, y1, areaSize, focusSize));
+
+			int x2 = x1 + focusSize;
+			int y2 = y1 + focusSize;
+			int focusWeight = 1000;
+
+			if(x1 < minArea){
+				x1 = minArea;
+				x2 = minArea + focusSize;
+			}
+			if(x2 > maxArea){
+				x1 = maxArea - focusSize;
+				x2 = maxArea;
+			}
+			if(y1 < minArea){
+				y1 = minArea;
+				y2 = y1 + focusSize;
+			}
+			if(y2 > maxArea){
+				y1 = maxArea - focusSize;
+				y2 = maxArea;
+			}
+
+			//Log.d("CAMERA!", String.format("xy1:%d,%d xy2:%d,%d w:%d h:%d size:%d", x1, y1, x2, y2, x2-x1, y2-y1, focusSize));
+
+			List<Camera.Area> focusList = new ArrayList<Camera.Area>();
+			focusList.add(new Camera.Area(new Rect(x1, y1, x2, y2), focusWeight));
+			if(maxNumFocusAreas > 0){
+				camera.getParameters().setFocusAreas(focusList);
+			}
+			if(maxNumMeteringAreas > 0){
+				camera.getParameters().setMeteringAreas(focusList);
+			}
+
+			AutoFocusCallback focusCallback = new AutoFocusCallback(){
+				public void onAutoFocus(boolean success, Camera camera){
+					if(success){
+						Log.d("CAMERA!", "focusCallback success!!");
+					}else{
+						Log.d("CAMERA!", "focusCallback faild!!");
+					}
+					camera.cancelAutoFocus();
+					fireEvent(CaptureDeviceModule.EVENT_FOCUS_COMPLETE, new KrollDict());
+				}
+			};
+			camera.autoFocus(focusCallback);
 		}
 	}
 
