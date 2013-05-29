@@ -36,6 +36,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	private CameraLayout cameraLayout;
 	private boolean previewRunning = false;
 	private int currentRotation;
+	private int currentRotationDegrees = 0;
 	private int currentFacing = Camera.CameraInfo.CAMERA_FACING_BACK;
 
 	public static FinderView finderView = null;
@@ -260,7 +261,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		}
 
 		TiBlob imageData = TiBlob.blobFromData(data);
-		KrollDict dict = CaptureDeviceModule.createDictForImage(imageData, "image/jpeg");
+		KrollDict dict = CaptureDeviceModule.createDictForImage(imageData, currentRotationDegrees);
 		fireEvent(CaptureDeviceModule.EVENT_IMAGE_PROCESSED, dict);
 
 		//cancelCallback = null;
@@ -288,40 +289,43 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		int orientation = TiApplication.getInstance().getResources().getConfiguration().orientation;
 		// The camera preview is always displayed in landscape mode. Need to rotate the preview according to
 		// the current orientation of the device.
+		int degrees = 0;
 		switch (currentRotation) {
 		case Surface.ROTATION_0:
 			if (orientation == Configuration.ORIENTATION_PORTRAIT) {
 				// The "natural" orientation of the device is a portrait orientation, eg. phones.
 				// Need to rotate 90 degrees.
-				camera.setDisplayOrientation(90);
+				degrees = 90;
 			} else {
 				// The "natural" orientation of the device is a landscape orientation, eg. tablets.
 				// Set the camera to the starting position (0 degree).
-				camera.setDisplayOrientation(0);
+				degrees = 0;
 			}
 			break;
 		case Surface.ROTATION_90:
 			if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-				camera.setDisplayOrientation(0);
+				degrees = 0;
 			} else {
-				camera.setDisplayOrientation(270);
+				degrees = 270;
 			}
 			break;
 		case Surface.ROTATION_180:
 			if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-				camera.setDisplayOrientation(270);
+				degrees = 270;
 			} else {
-				camera.setDisplayOrientation(180);
+				degrees = 180;
 			}
 			break;
 		case Surface.ROTATION_270:
 			if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-				camera.setDisplayOrientation(180);
+				degrees = 180;
 			} else {
-				camera.setDisplayOrientation(90);
+				degrees = 90;
 			}
 			break;
 		}
+		currentRotationDegrees = degrees;
+		camera.setDisplayOrientation(currentRotationDegrees);
 
 		// Set appropriate focus mode if supported.
 		List<String> supportedFocusModes = param.getSupportedFocusModes();
