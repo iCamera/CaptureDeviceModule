@@ -2,6 +2,7 @@
 package jp.dividual.capturedevice;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -20,14 +21,18 @@ import ti.modules.titanium.media.MediaModule;
 
 import android.content.res.Configuration;
 import android.hardware.Camera;
+import android.hardware.Camera.Area;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
 import android.os.Build;
 
 import android.content.Context;
+import android.graphics.Matrix;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.view.Surface;
 import android.view.SurfaceHolder;
+import android.view.View;
 
 
 public class FinderView extends TiUIView implements SurfaceHolder.Callback, Camera.PictureCallback, Camera.ShutterCallback, Camera.AutoFocusCallback {
@@ -43,6 +48,11 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	private List<String> supportedFlashModes = null;
 	private boolean focusAreaSupported = false;
 	private boolean meteringAreaSupported = false;
+	private List<Area> focusAreas = null;
+	private List<Area> meteringAreas = null;
+	private Matrix focusMatrix;
+	private int previewWidth;
+	private int previewHeight;
 
 	public static FinderView finderView = null;
 
@@ -52,8 +62,9 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	public FinderView(TiViewProxy proxy) {
 		super(proxy);		
 
-		Context context = proxy.getActivity();
+		focusMatrix = new Matrix();
 
+		Context context = proxy.getActivity();
 		// set overall layout - will populate in onResume
 		cameraLayout = new CameraLayout(context);
 		cameraLayout.addSurfaceCallback(this);
@@ -71,7 +82,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			this.openCameraGingerbread(facing);
 		}
 		if (camera != null) {
-			this.broadcastCapabilities();
+			this.initializeAfterCameraOpen();
 		} else {
 			onError(MediaModule.UNKNOWN_ERROR, "Unable to access the first back-facing camera.");
 			//finish();
@@ -125,6 +136,11 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		}
 		camera = Camera.open(cameraId);
 		currentFacing = facing;
+	}
+
+	private void initializeAfterCameraOpen() {
+		this.broadcastCapabilities();
+		this.setMatrix();
 	}
 
 	private void broadcastCapabilities() {
@@ -190,13 +206,15 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			});
 	}
 
-	public void setFocusAreas(KrollDict options) {
+	public void focusAndExposureAtPoint(KrollDict options) {
 		//Log.d("CAMERA!", options.toString());
 		if (this.focusAreaSupported || this.meteringAreaSupported) {
+			Parameters param = camera.getParameters();
+			String focusMode = param.getFocusMode();
+			Log.d(TAG, String.format("focusMode:%s", focusMode), Log.DEBUG_MODE);
 			/*
 			// output camera params
-			String focusMode = camera.getParameters().getFocusMode();
-			Log.d("CAMERA!", String.format("focusMode:%s focusAreas:%d meteringAreas:%d", focusMode, maxNumFocusAreas, maxNumMeteringAreas));
+
 			List<String> supportedFocusModes = camera.getParameters().getSupportedFocusModes();
 			if(supportedFocusModes != null){
 				for(String fm: supportedFocusModes){
@@ -207,61 +225,101 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 			Double xd = TiConvert.toDouble(options.get("x"));
 			Double yd = TiConvert.toDouble(options.get("y"));
-			int minArea = -1000;
-			int maxArea = 1000;
-			int areaSize = maxArea - minArea;
-			int focusSize = 10;
-			int x1 = (int)((areaSize * xd) - (areaSize / 2)) - (focusSize / 2);
-			int y1 = (int)((areaSize * yd) - (areaSize / 2)) - (focusSize / 2);
 
-			//Log.d("CAMERA!", String.format("yd:%f y1:%d areaSize:%d focusSize:%d", yd, y1, areaSize, focusSize));
-
-			int x2 = x1 + focusSize;
-			int y2 = y1 + focusSize;
-			int focusWeight = 1000;
-
-			if(x1 < minArea){
-				x1 = minArea;
-				x2 = minArea + focusSize;
-			}
-			if(x2 > maxArea){
-				x1 = maxArea - focusSize;
-				x2 = maxArea;
-			}
-			if(y1 < minArea){
-				y1 = minArea;
-				y2 = y1 + focusSize;
-			}
-			if(y2 > maxArea){
-				y1 = maxArea - focusSize;
-				y2 = maxArea;
+			View touchableView = this.getNativeView();
+			int width = touchableView.getWidth();
+			int height = touchableView.getHeight();
+			if (previewWidth != width || previewHeight != height) {
+				this.setMatrix();
 			}
 
-			//Log.d("CAMERA!", String.format("xy1:%d,%d xy2:%d,%d w:%d h:%d size:%d", x1, y1, x2, y2, x2-x1, y2-y1, focusSize));
+			int focusSize = 40;
+			int x = (int)(width * xd);
+			int y = (int)(height * yd);
 
-			List<Camera.Area> focusList = new ArrayList<Camera.Area>();
-			focusList.add(new Camera.Area(new Rect(x1, y1, x2, y2), focusWeight));
+			Log.d(TAG, String.format("xd:%f x:%d width:%d", xd, x, width), Log.DEBUG_MODE);
+			Log.d(TAG, String.format("yd:%f y:%d height:%d", yd, y, height), Log.DEBUG_MODE);
+
 			if(this.focusAreaSupported){
-				camera.getParameters().setFocusAreas(focusList);
+				initializeFocusAreas(focusSize, focusSize, x, y, width, height);
+				param.setFocusAreas(focusAreas);
 			}
 			if(this.meteringAreaSupported){
-				camera.getParameters().setMeteringAreas(focusList);
+				initializeFocusAreas(focusSize, focusSize, x, y, width, height);
+				param.setMeteringAreas(meteringAreas);
 			}
 
+			camera.setParameters(param);
 			Camera.AutoFocusCallback focusCallback = new Camera.AutoFocusCallback(){
 				public void onAutoFocus(boolean success, Camera camera){
 					if(success){
-						Log.d("CAMERA!", "focusCallback success!!");
+						Log.d(TAG, "focusCallback success!!", Log.DEBUG_MODE);
 					}else{
-						Log.d("CAMERA!", "focusCallback faild!!");
+						Log.d(TAG, "focusCallback faild!!", Log.DEBUG_MODE);
 					}
 					camera.cancelAutoFocus();
 					fireEvent(CaptureDeviceModule.EVENT_FOCUS_COMPLETE, new KrollDict());
+
+					if(focusAreaSupported){
+						Log.d(TAG, "RAW GET focus area: " + camera.getParameters().get("focus-areas"), Log.DEBUG_MODE);
+					}
 				}
 			};
 			camera.autoFocus(focusCallback);
 		}
 	}
+
+	private void initializeFocusAreas(int focusWidth, int focusHeight,
+							   int x, int y, int previewWidth, int previewHeight) {
+        if (focusAreas == null) {
+            focusAreas = new ArrayList<Area>();
+            focusAreas.add(new Area(new Rect(), 1000));
+        }
+        calculateTapArea(focusWidth, focusHeight, 1.5f, x, y, previewWidth, previewHeight,
+                ((Area) focusAreas.get(0)).rect);
+	}
+
+	private void initializeMeteringAreas(int focusWidth, int focusHeight,
+							   int x, int y, int previewWidth, int previewHeight) {
+        if (meteringAreas == null) {
+            meteringAreas = new ArrayList<Area>();
+            meteringAreas.add(new Area(new Rect(), 1000));
+        }
+        calculateTapArea(focusWidth, focusHeight, 1.5f, x, y, previewWidth, previewHeight,
+                ((Area) meteringAreas.get(0)).rect);
+	}
+
+    private void calculateTapArea(int focusWidth, int focusHeight, float areaMultiple,
+            int x, int y, int previewWidth, int previewHeight, Rect rect) {
+        int areaWidth = (int) (focusWidth * areaMultiple);
+        int areaHeight = (int) (focusHeight * areaMultiple);
+        int left = Util.clamp(x - areaWidth / 2, 0, previewWidth - areaWidth);
+        int top = Util.clamp(y - areaHeight / 2, 0, previewHeight - areaHeight);
+
+        RectF rectF = new RectF(left, top, left + areaWidth, top + areaHeight);
+		Log.d(TAG, "calculateTapArea before rectF: " + rectF.toString(), Log.DEBUG_MODE);
+        focusMatrix.mapRect(rectF);
+		Log.d(TAG, "calculateTapArea mapped rectF: " + rectF.toString(), Log.DEBUG_MODE);
+        Util.rectFToRect(rectF, rect);
+    }
+
+	/* Call when facing, displayOrientation has been changed */
+    private void setMatrix() {
+        if (true) {
+            Matrix tmpMatrix = new Matrix();
+			View touchableView = this.getNativeView();
+			previewWidth = touchableView.getWidth();
+			previewHeight = touchableView.getHeight();
+			Boolean mirror = currentFacing == Camera.CameraInfo.CAMERA_FACING_FRONT;
+			Log.d(TAG, String.format("setMatrix mirror:%b width:%d height:%d", mirror, previewWidth, previewHeight), Log.DEBUG_MODE);
+            Util.prepareMatrix(tmpMatrix, mirror, currentRotationDegrees,
+                    previewWidth, previewHeight);
+            // In face detection, the matrix converts the driver coordinates to UI
+            // coordinates. In tap focus, the inverted matrix converts the UI
+            // coordinates to driver coordinates.
+            tmpMatrix.invert(focusMatrix);
+        }
+    }
 
 	public void takePhoto(KrollDict options) {
 		saveToPhotoGallery = false;
@@ -377,6 +435,8 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		}
 		currentRotationDegrees = degrees;
 		camera.setDisplayOrientation(currentRotationDegrees);
+		this.setMatrix();
+		Log.d(TAG, "Set currentRotationDegrees to: " + ((Number)degrees).toString(), Log.DEBUG_MODE);
 
 		// Set appropriate focus mode if supported.
 		List<String> supportedFocusModes = param.getSupportedFocusModes();
