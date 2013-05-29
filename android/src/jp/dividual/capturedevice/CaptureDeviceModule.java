@@ -81,6 +81,19 @@ public class CaptureDeviceModule extends KrollModule
 		}
 	}
 
+	public void onResume(Activity activity) {
+		//Log.d("MODULE!!!!!!!!!!", "onResume");
+	}
+	public void onPouse(Activity activity) {
+		//Log.d("MODULE!!!!!!!!!!", "onPouse");
+	}
+	public void onStop(Activity activity) {
+		//Log.d("MODULE!!!!!!!!!!", "onStop");
+	}
+	public void onDestroy(Activity activity) {
+		//Log.d("MODULE!!!!!!!!!!", "onDestroy");
+	}
+
 	public static boolean isFroyo() {
 		return Build.VERSION.SDK_INT <= Build.VERSION_CODES.FROYO;
 	}
