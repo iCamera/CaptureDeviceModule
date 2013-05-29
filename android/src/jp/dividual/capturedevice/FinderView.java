@@ -20,7 +20,9 @@ import ti.modules.titanium.media.MediaModule;
 
 import android.content.res.Configuration;
 import android.hardware.Camera;
+import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
+import android.os.Build;
 
 import android.content.Context;
 import android.graphics.Rect;
@@ -234,7 +236,22 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		}
 	}
 
-	public void takePhoto() {
+	public void takePhoto(KrollDict options) {
+		saveToPhotoGallery = false;
+		if(options.containsKey("saveToDevice")){
+			saveToPhotoGallery = TiConvert.toBoolean(options.get("saveToDevice"));
+		}
+		if(options.containsKey("lat")){
+			Double val = TiConvert.toDouble(options.get("lat"));
+			camera.getParameters().setGpsLatitude(val);
+			//Log.d("LATLON", String.format("lat: %f", val));
+		}
+		if(options.containsKey("lng")){
+			Double val = TiConvert.toDouble(options.get("lng"));
+			camera.getParameters().setGpsLongitude(val);
+			//Log.d("LATLON", String.format("log: %f", val));
+		}
+
 		String focusMode = camera.getParameters().getFocusMode();
 		if (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
 			.equals(Parameters.FOCUS_MODE_INFINITY))) {
@@ -256,6 +273,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	public void onPictureTaken(byte[] data, Camera camera) {
 		camera.startPreview();
 
+		//Log.d("LATLON", String.format("saveToPhotoGallery: %b", saveToPhotoGallery));
 		if (saveToPhotoGallery) {
 			//saveToPhotoGallery(data);
 		}

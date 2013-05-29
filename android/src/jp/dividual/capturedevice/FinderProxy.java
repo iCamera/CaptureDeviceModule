@@ -39,10 +39,10 @@ public class FinderProxy extends TiViewProxy
 	}
 
 	@Kroll.method
-	public void takePhoto() {
+	public void takePhoto(KrollDict options) {
 		// make sure the preview / camera are open before trying to take photo
 		if (FinderView.finderView != null) {
-			FinderView.finderView.takePhoto();
+			FinderView.finderView.takePhoto(options);
 		} else {
 			Log.e(TAG, "Camera preview is not open, unable to take photo");
 		}
