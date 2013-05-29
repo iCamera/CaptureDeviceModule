@@ -100,6 +100,9 @@ public class CaptureDeviceModule extends KrollModule
 					CaptureDeviceModule.hasFroyoFrontCamera = true;
 				} catch (RuntimeException e) {
 					CaptureDeviceModule.hasFroyoFrontCamera = false;
+				} finally {
+					camera.release();
+					camera = null;
 				}
 			}
 			return CaptureDeviceModule.hasFroyoFrontCamera;
