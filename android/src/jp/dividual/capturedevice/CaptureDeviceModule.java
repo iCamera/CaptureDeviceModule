@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sanselan.ImageReadException;
@@ -17,6 +18,8 @@ import org.apache.sanselan.common.IImageMetadata;
 import org.apache.sanselan.formats.jpeg.JpegImageMetadata;
 import org.apache.sanselan.formats.jpeg.exifRewrite.ExifRewriter;
 import org.apache.sanselan.formats.tiff.TiffImageMetadata;
+import org.apache.sanselan.formats.tiff.constants.TagInfo;
+import org.apache.sanselan.formats.tiff.constants.TiffTagConstants;
 import org.apache.sanselan.formats.tiff.write.TiffOutputDirectory;
 import org.apache.sanselan.formats.tiff.write.TiffOutputField;
 import org.apache.sanselan.formats.tiff.write.TiffOutputSet;
@@ -150,7 +153,7 @@ public class CaptureDeviceModule extends KrollModule
 		return dest;
 	}
 
-	public static KrollDict createDictForImage(TiBlob imageData, Number rotationDegrees) {
+	public static KrollDict createDictForImage(TiBlob imageData, final Number rotationDegrees) {
 		KrollDict d = new KrollDict();
 		d.putCodeAndMessage(MediaModule.NO_ERROR, null);
 		d.put(EVENT_PROPERTY_ORIGINAL, imageData);
@@ -160,15 +163,6 @@ public class CaptureDeviceModule extends KrollModule
 		try {
 			originalFile = CaptureDeviceModule.writeTemporaryImageFile("original", imageData);
 			Log.d(TAG, "createDictForImage: saved original to file", Log.DEBUG_MODE);
-			ExifInterface originalExif = new ExifInterface(originalFile.getAbsolutePath());
-
-			boolean hasOrientation = ExifInterface.ORIENTATION_UNDEFINED != originalExif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
-			final Number rotateDegrees;
-			if (!hasOrientation) {
-				rotateDegrees = rotationDegrees;
-			} else {
-				rotateDegrees = 0;
-			}
 
 			rotatedFile = CaptureDeviceModule.getTemporaryImageFile("rotated");
 			// rotate AND down-sample enough to be able to decode it within the VM capacity
@@ -176,12 +170,16 @@ public class CaptureDeviceModule extends KrollModule
 					public Bitmap onTransformBitmap(Bitmap source) {
 						// Create transform matrix
 						Matrix matrix = new Matrix();
-						matrix.postRotate(rotateDegrees.intValue());
+						matrix.postRotate(rotationDegrees.intValue());
 						return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
 					}
 				});
-			CaptureDeviceModule.copyExifData(originalFile, rotatedFile);
-			Log.d(TAG, "createDictForImage: rotated and copied exif", Log.DEBUG_MODE);
+
+			List<TagInfo> excludedFields = new ArrayList<TagInfo>();
+			excludedFields.add(TiffTagConstants.TIFF_TAG_ORIENTATION);
+
+			CaptureDeviceModule.copyExifData(originalFile, rotatedFile, excludedFields);
+			Log.d(TAG, "createDictForImage: rotated and copied exif (rotation:" + rotationDegrees.toString() + ")", Log.DEBUG_MODE);
 
 			TiBlob sourceBlob = CaptureDeviceModule.imageBlobFromFile(rotatedFile);
 			int width = sourceBlob.getWidth();
@@ -190,10 +188,10 @@ public class CaptureDeviceModule extends KrollModule
 			float thumbnailHeight = height * PHOTO_WIDTH_THUMBNAIL / width;
 
 			d.put(EVENT_PROPERTY_CONTENT,
-				  CaptureDeviceModule.resizeAndCopyExifData(rotatedFile, PHOTO_WIDTH_CONTENT, contentHeight));
+				  CaptureDeviceModule.resizeAndCopyExifData(rotatedFile, PHOTO_WIDTH_CONTENT, contentHeight, excludedFields));
 			Log.d(TAG, "createDictForImage: resized for content", Log.DEBUG_MODE);
 			d.put(EVENT_PROPERTY_THUMBNAIL,
-				  CaptureDeviceModule.resizeAndCopyExifData(rotatedFile, PHOTO_WIDTH_THUMBNAIL, thumbnailHeight));
+				  CaptureDeviceModule.resizeAndCopyExifData(rotatedFile, PHOTO_WIDTH_THUMBNAIL, thumbnailHeight, excludedFields));
 			Log.d(TAG, "createDictForImage: resized for thumbnail", Log.DEBUG_MODE);
 		} catch (IOException e) {
 			d.putCodeAndMessage(MediaModule.UNKNOWN_ERROR, e.toString());
@@ -240,7 +238,7 @@ public class CaptureDeviceModule extends KrollModule
 		return blob;
 	}
 
-	private static TiBlob resizeAndCopyExifData(File sourceFile, final Number width, final Number height) throws IOException {
+	private static TiBlob resizeAndCopyExifData(File sourceFile, final Number width, final Number height, List<TagInfo> excludedFields) throws IOException {
 		File resizedFile = null;
 		try {
 			resizedFile = CaptureDeviceModule.getTemporaryImageFile("resized");
@@ -249,7 +247,7 @@ public class CaptureDeviceModule extends KrollModule
 						return Bitmap.createScaledBitmap(source, width.intValue(), height.intValue(), true);
 					}
 				});
-			CaptureDeviceModule.copyExifData(sourceFile, resizedFile);
+			CaptureDeviceModule.copyExifData(sourceFile, resizedFile, excludedFields);
 			return CaptureDeviceModule.imageBlobFromFile(resizedFile, true);
 		} finally {
 			if (resizedFile != null) {
@@ -327,7 +325,7 @@ public class CaptureDeviceModule extends KrollModule
 		return false;
 	}
 
-	private static void copyExifData(File sourceFile, File destFile)
+	private static void copyExifData(File sourceFile, File destFile, List<TagInfo> excludedFields)
 	{
 		String tempFileName = destFile.getAbsolutePath() + ".tmp";
 		File tempFile = null;
@@ -359,13 +357,11 @@ public class CaptureDeviceModule extends KrollModule
 								TiffOutputField sourceField = (TiffOutputField) sourceFields.get(j);
  
 								// Check exclusion list
-								/*
 								if (excludedFields.contains(sourceField.tagInfo))
 									{
 										destinationDirectory.removeField(sourceField.tagInfo);
 										continue;
 									}
-									*/
  
 								// Remove any existing field
 								destinationDirectory.removeField(sourceField.tagInfo);
