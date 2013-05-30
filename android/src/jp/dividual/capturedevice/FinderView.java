@@ -150,6 +150,8 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 		Parameters param = FinderView.camera.getParameters();
 		CameraLayout.supportedPreviewSizes = param.getSupportedPreviewSizes();
+		CameraLayout.optimalPreviewSize = null;
+		this.getNativeView().requestLayout();
 		this.supportedFlashModes = param.getSupportedFlashModes();
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
 			this.focusAreaSupported = (param.getMaxNumFocusAreas() > 0
@@ -191,14 +193,14 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		Log.d(TAG, "Set camera flash mode to: " + value, Log.DEBUG_MODE);
 	}
 
-	public void switchCamera(int facing) {
+	public void switchCamera(final int facing) {
 		if (currentFacing == facing)
 			return;
 		this.releaseCamera();
-		this.openCamera(facing);
 		this.proxy.getActivity().runOnUiThread(new Runnable() {
 				@Override
 				public void run() {
+					openCamera(facing);
 					CameraLayout layout = (CameraLayout) getNativeView();
 					updateCameraParameters();
 					resumePreview(layout.getSurfaceHolder());
@@ -372,9 +374,6 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		TiBlob imageData = TiBlob.blobFromData(data);
 		KrollDict dict = CaptureDeviceModule.createDictForImage(imageData, currentRotationDegrees);
 		fireEvent(CaptureDeviceModule.EVENT_IMAGE_PROCESSED, dict);
-
-		//cancelCallback = null;
-		//cameraActivity.finish();
 	}
 
 	public void surfaceChanged(SurfaceHolder previewHolder, int format, int width, int height)

@@ -144,6 +144,7 @@ public class CameraLayout extends TiCompositeLayout {
 	@Override
 	protected void onAttachedToWindow () {
 		//		previewLayout.addView(preview, new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+		Log.d(TAG, "Populating camera preview", Log.DEBUG_MODE);
 		previewLayout.addView(preview);
 		if (localOverlayProxy != null) {
 			/*
@@ -156,6 +157,7 @@ public class CameraLayout extends TiCompositeLayout {
 	@Override
 	protected void onDetachedFromWindow()
 	{
+		Log.d(TAG, "Destroying camera preview", Log.DEBUG_MODE);
 		previewLayout.removeView(preview);
 		if (localOverlayProxy != null) {
 			previewLayout.removeView(localOverlayProxy.getOrCreateView().getNativeView());
