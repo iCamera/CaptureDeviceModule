@@ -34,6 +34,7 @@ import org.appcelerator.titanium.TiContext;
 import org.appcelerator.titanium.io.TiFileFactory;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
@@ -41,7 +42,9 @@ import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.media.ExifInterface;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 
 import ti.modules.titanium.media.MediaModule;
 
@@ -135,13 +138,58 @@ public class CaptureDeviceModule extends KrollModule
 		return pm.hasSystemFeature(PackageManager.FEATURE_CAMERA);
 	}
 
+	public static void saveToPhotoGallery(byte[] data)
+	{
+		File imageFile = CaptureDeviceModule.createGalleryImageFile();
+		try {
+			FileOutputStream imageOut = new FileOutputStream(imageFile);
+			imageOut.write(data);
+			imageOut.close();
+
+		} catch (FileNotFoundException e) {
+			Log.e(TAG, "Failed to open gallery image file: " + e.getMessage());
+
+		} catch (IOException e) {
+			Log.e(TAG, "Failed to write image to gallery file: " + e.getMessage());
+		}
+
+		// Notify media scanner to add image to gallery.
+		Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+		Uri contentUri = Uri.fromFile(imageFile);
+		mediaScanIntent.setData(contentUri);
+		Activity activity = TiApplication.getAppCurrentActivity();
+		activity.sendBroadcast(mediaScanIntent);
+	}
+
+	public static File createGalleryImageFile() {
+		File pictureDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+		String appName = TiApplication.getInstance().getAppInfo().getName();
+		File appPictureDir = new File(pictureDir, appName);
+		if (!appPictureDir.exists()) {
+			if (!appPictureDir.mkdirs()) {
+				Log.e(TAG, "Failed to create application gallery directory.");
+				return null;
+			}
+		}
+
+		File imageFile;
+		try {
+			imageFile = File.createTempFile(appName.toLowerCase(), ".jpg", appPictureDir);
+		} catch (IOException e) {
+			Log.e(TAG, "Failed to create gallery image file: " + e.getMessage());
+			return null;
+		}
+
+		return imageFile;
+	}
+
 	private static File getTemporaryImageFile(String prefix) throws IOException {
 		Activity activity = CaptureDeviceModule.getCurrentActivity();
 		File cacheDir = activity.getExternalCacheDir();
 		if (cacheDir == null) {
 			cacheDir = activity.getCacheDir();
 		}
-		return File.createTempFile(prefix, "jpeg", cacheDir);
+		return File.createTempFile(prefix, "jpg", cacheDir);
 	}
 
 	private static File writeTemporaryImageFile(String prefix, TiBlob blob) throws IOException {

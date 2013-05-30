@@ -366,7 +366,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 		//Log.d("LATLON", String.format("saveToPhotoGallery: %b", saveToPhotoGallery));
 		if (saveToPhotoGallery) {
-			//saveToPhotoGallery(data);
+			CaptureDeviceModule.saveToPhotoGallery(data);
 		}
 
 		TiBlob imageData = TiBlob.blobFromData(data);
