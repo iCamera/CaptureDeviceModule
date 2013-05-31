@@ -4,6 +4,7 @@ package jp.dividual.capturedevice;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.view.OrientationEventListener;
 
 /**
  * Collection of utility functions used in this package.
@@ -11,10 +12,27 @@ import android.graphics.RectF;
 public class Util {
     private static final String TAG = "Util";
 
+    // Orientation hysteresis amount used in rounding, in degrees
+    public static final int ORIENTATION_HYSTERESIS = 5;
+
     public static int clamp(int x, int min, int max) {
         if (x > max) return max;
         if (x < min) return min;
         return x;
+    }
+
+    public static int getJpegRotation(boolean facingFront, int cameraOrientation, int orientation) {
+        // See android.hardware.Camera.Parameters.setRotation for
+        // documentation.
+        int rotation = 0;
+        if (orientation != OrientationEventListener.ORIENTATION_UNKNOWN) {
+            if (facingFront) {
+                rotation = (cameraOrientation - orientation + 360) % 360;
+            } else {  // back-facing camera
+                rotation = (cameraOrientation + orientation) % 360;
+            }
+        }
+        return rotation;
     }
 
     public static void prepareMatrix(Matrix matrix, boolean mirror, int displayOrientation,
@@ -34,6 +52,21 @@ public class Util {
         rect.top = Math.round(rectF.top);
         rect.right = Math.round(rectF.right);
         rect.bottom = Math.round(rectF.bottom);
+    }
+
+    public static int roundOrientation(int orientation, int orientationHistory) {
+        boolean changeOrientation = false;
+        if (orientationHistory == OrientationEventListener.ORIENTATION_UNKNOWN) {
+            changeOrientation = true;
+        } else {
+            int dist = Math.abs(orientation - orientationHistory);
+            dist = Math.min( dist, 360 - dist );
+            changeOrientation = ( dist >= 45 + ORIENTATION_HYSTERESIS );
+        }
+        if (changeOrientation) {
+            return ((orientation + 45) / 90 * 90) % 360;
+        }
+        return orientationHistory;
     }
 
 }
