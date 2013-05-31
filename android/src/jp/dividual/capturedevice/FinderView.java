@@ -42,9 +42,10 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 	private CameraLayout cameraLayout;
 	private boolean previewRunning = false;
-	private int currentRotation;
-	private int currentRotationDegrees = 0;
+	private int currentUIRotation;
+	private int currentUIRotationDegrees = 0;
 	private int currentFacing = Camera.CameraInfo.CAMERA_FACING_BACK;
+	private int currentCameraId = 0;
 	private List<String> supportedFlashModes = null;
 	private boolean focusAreaSupported = false;
 	private boolean meteringAreaSupported = false;
@@ -128,13 +129,12 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			}
 		}
 
-		int cameraId;
 		if (facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-			cameraId = CaptureDeviceModule.frontCameraId;
+			currentCameraId = CaptureDeviceModule.frontCameraId;
 		} else {
-			cameraId = CaptureDeviceModule.backCameraId;
+			currentCameraId = CaptureDeviceModule.backCameraId;
 		}
-		camera = Camera.open(cameraId);
+		camera = Camera.open(currentCameraId);
 		currentFacing = facing;
 	}
 
@@ -312,9 +312,9 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			View touchableView = this.getNativeView();
 			previewWidth = touchableView.getWidth();
 			previewHeight = touchableView.getHeight();
-			Boolean mirror = currentFacing == Camera.CameraInfo.CAMERA_FACING_FRONT;
-			Log.d(TAG, String.format("setMatrix mirror:%b width:%d height:%d", mirror, previewWidth, previewHeight), Log.DEBUG_MODE);
-            Util.prepareMatrix(tmpMatrix, mirror, currentRotationDegrees,
+			Boolean mirror = isFacingFront();
+			//Log.d(TAG, String.format("setMatrix mirror:%b width:%d height:%d", mirror, previewWidth, previewHeight), Log.DEBUG_MODE);
+			Util.prepareMatrix(tmpMatrix, mirror, currentUIRotationDegrees,
                     previewWidth, previewHeight);
             // In face detection, the matrix converts the driver coordinates to UI
             // coordinates. In tap focus, the inverted matrix converts the UI
@@ -372,8 +372,31 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		}
 
 		TiBlob imageData = TiBlob.blobFromData(data);
-		KrollDict dict = CaptureDeviceModule.createDictForImage(imageData, currentRotationDegrees);
+		int rotateDegrees = getCameraDisplayOrientation(true);
+		if (isFacingFront()) {
+			rotateDegrees = (rotateDegrees + 180) % 360;
+		}
+		KrollDict dict = CaptureDeviceModule.createDictForImage(imageData, rotateDegrees);
 		fireEvent(CaptureDeviceModule.EVENT_IMAGE_PROCESSED, dict);
+	}
+
+	public void surfaceCreated(SurfaceHolder previewHolder)
+	{
+		try {
+			camera.setPreviewDisplay(previewHolder);
+		} catch (Exception e) {
+			onError(MediaModule.UNKNOWN_ERROR, "Unable to setup preview surface: " + e.getMessage());
+			//finish();
+			return;
+		}
+		currentUIRotation = this.proxy.getActivity().getWindowManager().getDefaultDisplay().getRotation();
+	}
+
+	// make sure to call release() otherwise you will have to force kill the app before
+	// the built in camera will open
+	public void surfaceDestroyed(SurfaceHolder previewHolder)
+	{
+		this.releaseCamera();
 	}
 
 	public void surfaceChanged(SurfaceHolder previewHolder, int format, int width, int height)
@@ -383,59 +406,21 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		}
 
 		int rotation = this.proxy.getActivity().getWindowManager().getDefaultDisplay().getRotation();
-		if (currentRotation == rotation && previewRunning) {
+		if (currentUIRotation == rotation && previewRunning) {
 			return;
 		}
 		this.pausePreview(previewHolder);
-		currentRotation = rotation;
+		currentUIRotation = rotation;
 		this.updateCameraParameters();
 		this.resumePreview(previewHolder);
 	}
 
 	private void updateCameraParameters() {
 		Parameters param = camera.getParameters();
-		int orientation = TiApplication.getInstance().getResources().getConfiguration().orientation;
-		// The camera preview is always displayed in landscape mode. Need to rotate the preview according to
-		// the current orientation of the device.
-		int degrees = 0;
-		switch (currentRotation) {
-		case Surface.ROTATION_0:
-			if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-				// The "natural" orientation of the device is a portrait orientation, eg. phones.
-				// Need to rotate 90 degrees.
-				degrees = 90;
-			} else {
-				// The "natural" orientation of the device is a landscape orientation, eg. tablets.
-				// Set the camera to the starting position (0 degree).
-				degrees = 0;
-			}
-			break;
-		case Surface.ROTATION_90:
-			if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-				degrees = 0;
-			} else {
-				degrees = 270;
-			}
-			break;
-		case Surface.ROTATION_180:
-			if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-				degrees = 270;
-			} else {
-				degrees = 180;
-			}
-			break;
-		case Surface.ROTATION_270:
-			if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-				degrees = 180;
-			} else {
-				degrees = 90;
-			}
-			break;
-		}
-		currentRotationDegrees = degrees;
-		camera.setDisplayOrientation(currentRotationDegrees);
+		currentUIRotationDegrees = this.getCameraDisplayOrientation();
+		camera.setDisplayOrientation(currentUIRotationDegrees);
 		this.setMatrix();
-		Log.d(TAG, "Set currentRotationDegrees to: " + ((Number)degrees).toString(), Log.DEBUG_MODE);
+		Log.d(TAG, "Set currentUIRotationDegrees to: " + ((Number)currentUIRotationDegrees).toString(), Log.DEBUG_MODE);
 
 		// Set appropriate focus mode if supported.
 		List<String> supportedFocusModes = param.getSupportedFocusModes();
@@ -449,32 +434,61 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 		if (CameraLayout.optimalPreviewSize != null) {
 			param.setPreviewSize(CameraLayout.optimalPreviewSize.width, CameraLayout.optimalPreviewSize.height);
-			camera.setParameters(param);
 		}
+		camera.setParameters(param);
 	}
 
-	public void surfaceCreated(SurfaceHolder previewHolder)
-	{
-		try {
-			camera.setPreviewDisplay(previewHolder);
-		} catch (Exception e) {
-			onError(MediaModule.UNKNOWN_ERROR, "Unable to setup preview surface: " + e.getMessage());
-			//finish();
-			return;
-		}
-		currentRotation = this.proxy.getActivity().getWindowManager().getDefaultDisplay().getRotation();
+	private int getCameraDisplayOrientation() {
+		return getCameraDisplayOrientation(false);
 	}
 
-	// make sure to call release() otherwise you will have to force kill the app before
-	// the built in camera will open
-	public void surfaceDestroyed(SurfaceHolder previewHolder)
-	{
-		this.releaseCamera();
+	private int getCameraDisplayOrientation(boolean forceUpdate) {
+		if (forceUpdate) {
+			currentUIRotation = this.proxy.getActivity().getWindowManager().getDefaultDisplay().getRotation();
+		}
+		int degrees = 0;
+		switch (currentUIRotation) {
+		case Surface.ROTATION_0: degrees = 0; break;
+		case Surface.ROTATION_90: degrees = 90; break;
+		case Surface.ROTATION_180: degrees = 180; break;
+		case Surface.ROTATION_270: degrees = 270; break;
+		}
+
+		int result;
+		int cameraOrientation = this.getCameraOrientation();
+		if (this.isFacingFront()) {
+			result = (cameraOrientation + degrees) % 360;
+			result = (360 - result) % 360;  // compensate the mirror
+		} else {  // back-facing
+			result = (cameraOrientation - degrees + 360) % 360;
+		}
+		return result;
+	}
+
+	private int getCameraOrientation() {
+		int orientation = 0;
+		if (CaptureDeviceModule.isFroyo()) {
+			if (this.isFacingFront()) {
+				orientation = 270;
+			} else {
+				orientation = 90;
+			}
+		} else {
+			Camera.CameraInfo info = new Camera.CameraInfo();
+			Camera.getCameraInfo(currentCameraId, info);
+			orientation = info.orientation;
+		}
+		return orientation;
+	}
+
+	private boolean isFacingFront() {
+		return currentFacing == Camera.CameraInfo.CAMERA_FACING_FRONT;
 	}
 
 	@Override
 	public void release()
 	{
+		Log.d(TAG, "Releasing everything", Log.DEBUG_MODE);
 		super.release();
 		finderView = null;
 		this.releaseCamera();
