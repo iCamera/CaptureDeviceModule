@@ -30,9 +30,6 @@ BOOL frontCameraMode = NO;
 }
 
 
--(void)start:(id)args{
-	NSLog( @"CapturedeviceFinderProxy started" );
-}
 
 
 // カメラを取得
@@ -205,41 +202,49 @@ BOOL frontCameraMode = NO;
 
 -(void)viewDidAttach{
     NSLog( @"CapturedeviceFinderProxy viewDidAttach" );
-    if( initialized ){
-        NSLog( @"CapturedeviceFinderProxy 初期化済みです。" );
-        return;
-    }
-    initialized = YES;
-    //    self.view.backgroundColor = [UIColor redColor];
-    
-    // カメラを取得して初期化
-    NSError *error = nil;
-    
-    captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
-    [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
-    AVCaptureDeviceInput *videoInput = [AVCaptureDeviceInput deviceInputWithDevice:captureDevice error:&error];
+}
 
-    // セッション初期化
-    captureSession = [[AVCaptureSession alloc] init];
-    [captureSession beginConfiguration];
-    [captureSession addInput:videoInput];
-    captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
-    [captureSession commitConfiguration];
+-(void)start:(id)args{
+    NSLog( @"CapturedeviceFinderProxy start" );
     
-    previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:captureSession];
-    previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-    previewLayer.frame = self.view.bounds;
-    NSLog( @"%@", NSStringFromCGRect(previewLayer.frame) );
-    [self.view.layer insertSublayer:previewLayer atIndex:0];
-    
-    // 出力の初期化
-    imageOutput = [[AVCaptureStillImageOutput alloc] init];
-    [captureSession addOutput:imageOutput];
-    
+    if( initialized == NO ){
+        initialized = YES;
+        //    self.view.backgroundColor = [UIColor redColor];
+        
+        // カメラを取得して初期化
+        NSError *error = nil;
+        
+        captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+        [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
+        AVCaptureDeviceInput *videoInput = [AVCaptureDeviceInput deviceInputWithDevice:captureDevice error:&error];
+        
+        // セッション初期化
+        captureSession = [[AVCaptureSession alloc] init];
+        [captureSession beginConfiguration];
+        [captureSession addInput:videoInput];
+        captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
+        [captureSession commitConfiguration];
+        
+        previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:captureSession];
+        previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+        previewLayer.frame = self.view.bounds;
+        NSLog( @"%@", NSStringFromCGRect(previewLayer.frame) );
+        [self.view.layer insertSublayer:previewLayer atIndex:0];
+        
+        // 出力の初期化
+        imageOutput = [[AVCaptureStillImageOutput alloc] init];
+        [captureSession addOutput:imageOutput];
+    }
+
     // セッション開始
     [captureSession startRunning];
 }
 
+-(void)stop:(id)args{
+    NSLog( @"CapturedeviceFinderProxy start" );
+    // セッション開始
+    [captureSession stopRunning];
+}
 
 
 -(void)viewWillAttach{

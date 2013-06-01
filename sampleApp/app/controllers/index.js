@@ -205,11 +205,14 @@ finder.addEventListener( "imageProcessed", function(e){
 
 
 function open(){
+	finder.start();
 	$.camera_view.add( finder )
 }
 
 function close(){
 	$.camera_view.remove( finder )
+	finder.stop();
+
 }
 
 function shutter(){
