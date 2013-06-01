@@ -13,7 +13,7 @@
 
 @implementation JpDividualCapturedeviceFinderProxy
 
-BOOL initialized = NO;
+BOOL started = NO;
 AVCaptureDevice* captureDevice;
 AVCaptureSession* captureSession;
 AVCaptureVideoPreviewLayer* previewLayer;
@@ -212,8 +212,8 @@ BOOL frontCameraMode = NO;
 -(void)start:(id)args{
     NSLog( @"CapturedeviceFinderProxy start" );
     
-    if( initialized == NO ){
-        initialized = YES;
+    if( started == NO ){
+        started = YES;
         //    self.view.backgroundColor = [UIColor redColor];
         
         // カメラを取得して初期化
@@ -239,16 +239,24 @@ BOOL frontCameraMode = NO;
         // 出力の初期化
         imageOutput = [[AVCaptureStillImageOutput alloc] init];
         [captureSession addOutput:imageOutput];
+        
+        // セッション開始
+        [captureSession startRunning];
     }
-
-    // セッション開始
-    [captureSession startRunning];
 }
 
 -(void)stop:(id)args{
-    NSLog( @"CapturedeviceFinderProxy start" );
-    // セッション開始
-    [captureSession stopRunning];
+    NSLog( @"CapturedeviceFinderProxy stop" );
+    if( started ){
+        // セッション終了
+        [captureSession stopRunning];
+        [captureDevice removeObserver:self forKeyPath:@"adjustingFocus" context:nil];
+        AVCaptureInput* input = [captureSession.inputs objectAtIndex:0];
+        [captureSession removeInput:input];
+        AVCaptureVideoDataOutput* output = (AVCaptureVideoDataOutput*)[captureSession.outputs objectAtIndex:0];
+        [captureSession removeOutput:output];
+        started = NO;
+    }
 }
 
 

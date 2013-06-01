@@ -1,6 +1,98 @@
 "use strict"
 
-var testmodule = require('jp.dividual.capturedevice');
+
+
+var finder;
+var opened = false;
+
+
+
+
+
+function open(){
+	if( opened ){
+		Ti.API.info( "すでに開始しています" )
+		return;
+	}
+	var testmodule = require('jp.dividual.capturedevice');
+	finder = testmodule.createFinder({
+		color:"white",
+		left: 0,
+		bottom: 0,
+		width: "240dp",
+		height: "320dp",
+	});
+	finder.addEventListener( "click", _onFinderClick )
+	finder.addEventListener( "focusComplete", _onFocusComplete )
+	finder.addEventListener( "shutter", _onShutter )
+	finder.addEventListener( "imageProcessed", _onImageProcessed )
+
+	finder.start();
+	$.camera_view.add( finder )
+	opened = true;
+}
+
+function close(){
+	if( opened==false ){
+		Ti.API.info( "すでに停止しています" )
+		return;
+	}
+
+	finder.removeEventListener( "click", _onFinderClick )
+	finder.removeEventListener( "focusComplete", _onFocusComplete )
+	finder.removeEventListener( "shutter", _onShutter )
+	finder.removeEventListener( "imageProcessed", _onImageProcessed )
+
+	$.camera_view.remove( finder )
+	finder.stop();
+	opened = false;
+}
+
+
+function _onFinderClick(e){
+	var horizontal = 1 - ( e.x / e.source.size.width )
+	var vertical = ( e.y / e.source.size.height )
+	console.log( horizontal +", "+ vertical );
+	finder.focusAndExposureAtPoint( {x:vertical, y:horizontal} );
+
+}
+function _onFocusComplete(){
+	console.log( "フォーカス完了!" );
+}
+function _onShutter(e){
+	finder.opacity = 0;
+	finder.animate( {opacity:1, duration:200} )
+
+}
+function _onImageProcessed(e){
+	// 画像ファイルを一時的に保存
+	var image = e.thumbnail;
+	var newFile = Ti.Filesystem.getFile( Ti.Filesystem.tempDirectory, guid()+'.jpg' );
+	if( !Alloy.Globals.isAndroid ){
+		newFile.createFile();
+	}
+	newFile.write( image );
+	trace( String(newFile.size) )
+	trace( newFile.nativePath )
+
+	var entry = Alloy.createModel('Entry', {
+		title: "hoge",
+		imagePath: newFile.nativePath,
+	    created_at : new Date()
+	});
+	Alloy.Collections.Entries.add( entry );// add new model to the global collection
+	entry.save();// save the model to persistent storage
+
+}
+
+
+
+
+
+
+
+
+
 
 
 // var irisImages = []
@@ -164,62 +256,6 @@ function updateListItems(){
 
 
 
-var finder = testmodule.createFinder({
-	color:"white",
-	left: 0,
-	bottom: 0,
-	width: "240dp",
-	height: "320dp",
-});
-
-finder.addEventListener( "click", function(e){
-	var horizontal = 1 - ( e.x / e.source.size.width )
-	var vertical = ( e.y / e.source.size.height )
-	console.log( horizontal +", "+ vertical );
-	finder.focusAndExposureAtPoint( {x:vertical, y:horizontal} );
-} )
-
-finder.addEventListener( "focusComplete", function(e){
-	console.log( "フォーカス完了!" );
-} )
-
-finder.addEventListener( "shutter", function(e){
-	finder.opacity = 0;
-	finder.animate( {opacity:1, duration:200} )
-} )
-
-
-finder.addEventListener( "imageProcessed", function(e){
-	// 画像ファイルを一時的に保存
-	var image = e.thumbnail;
-	var newFile = Ti.Filesystem.getFile( Ti.Filesystem.tempDirectory, guid()+'.jpg' );
-	if( !Alloy.Globals.isAndroid ){
-		newFile.createFile();
-	}
-	newFile.write( image );
-	trace( String(newFile.size) )
-	trace( newFile.nativePath )
-
-	var entry = Alloy.createModel('Entry', {
-		title: "hoge",
-		imagePath: newFile.nativePath,
-	    created_at : new Date()
-	});
-	Alloy.Collections.Entries.add( entry );// add new model to the global collection
-	entry.save();// save the model to persistent storage
-} )
-
-
-function open(){
-	finder.start();
-	$.camera_view.add( finder )
-}
-
-function close(){
-	$.camera_view.remove( finder )
-	finder.stop();
-
-}
 
 function shutter(){
 	finder.takePhoto( {saveToDevice:true} )
