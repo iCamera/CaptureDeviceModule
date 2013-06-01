@@ -2,9 +2,6 @@
 
 var testmodule = require('jp.dividual.capturedevice');
 
-var rootSection = Ti.UI.createListSection();
-$.listView.setSections( [rootSection] );
-
 
 // var irisImages = []
 // for( var i=1; i<10; i++ ){
@@ -33,7 +30,6 @@ function createThumbViewTemplate( objectId ){
 var myTemplate = {
 	properties: {
 	    height: '79dp',
-	    selectionStyle: Titanium.UI.iPhone.ListViewCellSelectionStyle.NONE,
 	},
     childTemplates: [
     	{
@@ -50,9 +46,17 @@ var myTemplate = {
     	}
     ]
 };
+if( !Alloy.Globals.isAndroid ){
+	myTemplate.properties.selectionStyle = Titanium.UI.iPhone.ListViewCellSelectionStyle.NONE;
+}
 
-$.listView.templates = { 'temple': myTemplate },
-$.listView.defaultItemTemplate = 'temple'
+$.listView = Ti.UI.createListView({
+	templates: { 'temple': myTemplate },
+    defaultItemTemplate: 'temple'
+});
+var rootSection = Ti.UI.createListSection();
+$.listView.setSections( [rootSection] );
+$.listViewContainer.add($.listView);
 
 $.listView.addEventListener('itemclick', function(e){
 	dump(e)
@@ -189,7 +193,9 @@ finder.addEventListener( "imageProcessed", function(e){
 	// 画像ファイルを一時的に保存
 	var image = e.thumbnail;
 	var newFile = Ti.Filesystem.getFile( Ti.Filesystem.tempDirectory, guid()+'.jpg' );
-	newFile.createFile();
+	if( !Alloy.Globals.isAndroid ){
+		newFile.createFile();
+	}
 	newFile.write( image );
 	trace( String(newFile.size) )
 	trace( newFile.nativePath )

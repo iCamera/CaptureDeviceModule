@@ -1,16 +1,19 @@
 /* -*- tab-width: 4; indent-tabs-mode: t; -*- */
 package jp.dividual.capturedevice;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.kroll.common.Log;
-import org.appcelerator.titanium.TiContext;
 import org.appcelerator.titanium.proxy.TiViewProxy;
 import org.appcelerator.titanium.view.TiUIView;
 
 import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.hardware.Camera.Parameters;
+import android.hardware.Camera.CameraInfo;
 
 @Kroll.proxy(creatableInModule=CaptureDeviceModule.class)
 public class FinderProxy extends TiViewProxy
@@ -32,21 +35,29 @@ public class FinderProxy extends TiViewProxy
 
 	@Kroll.method
 	public void focusAndExposureAtPoint(KrollDict options) {
+		FinderView.finderView.focusAndExposureAtPoint(options);
 	}
 
 	@Kroll.method
-	public void takePhoto() {
+	public void takePhoto(KrollDict options) {
 		// make sure the preview / camera are open before trying to take photo
 		if (FinderView.finderView != null) {
-			FinderView.finderView.takePhoto();
+			FinderView.finderView.takePhoto(options);
 		} else {
 			Log.e(TAG, "Camera preview is not open, unable to take photo");
 		}
 	}
 
 	@Kroll.method
-	public Object[] getDevices() {
-		return null;
+	public String[] getDevices() {
+		List<String> devices = new ArrayList<String>();
+		if (CaptureDeviceModule.isBackCameraSupported()) {
+			devices.add(CaptureDeviceModule.CAMERA_DEVICE_BACK);
+		}
+		if (CaptureDeviceModule.isFrontCameraSupported()) {
+			devices.add(CaptureDeviceModule.CAMERA_DEVICE_FRONT);
+		}
+		return devices.toArray(new String[devices.size()]);
 	}
 
 	@Kroll.method
@@ -79,10 +90,20 @@ public class FinderProxy extends TiViewProxy
 
 	@Kroll.method
 	public void changeToFrontCamera() {
+		this.setCamera(CameraInfo.CAMERA_FACING_FRONT);
 	}
 
 	@Kroll.method
 	public void changeToBackCamera() {
+		this.setCamera(CameraInfo.CAMERA_FACING_BACK);
+	}
+
+	private void setCamera(int facing) {
+		if (FinderView.finderView != null) {
+			FinderView.finderView.switchCamera(facing);
+		} else {
+			Log.w(TAG, "Camera preview is not open, unable to set params");
+		}
 	}
 
 	/**
@@ -91,5 +112,15 @@ public class FinderProxy extends TiViewProxy
 	@Kroll.setProperty @Kroll.method
 	public void setOverlay(TiViewProxy proxy) {
 		CameraLayout.overlayProxy = proxy;
+	}
+
+	@Kroll.method
+	public int getStatusBarHeight() {
+		int result = 0;
+		int resourceId = this.getActivity().getResources().getIdentifier("status_bar_height", "dimen", "android");
+		if (resourceId > 0) {
+			result = this.getActivity().getResources().getDimensionPixelSize(resourceId);
+		}
+		return result;
 	}
 }

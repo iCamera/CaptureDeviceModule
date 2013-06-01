@@ -8,7 +8,7 @@
 			</TableView>
  -->
 
-			<ListView id="listView" top="0" bottom="320dp" />
+			<View id="listViewContainer" top="0" bottom="320dp" />
 
 			<View left="0" bottom="0" width="Ti.UI.FILL" height="320dp" id="camera_view" backgroundColor="#ddd">
 				<View right="0" width="100dp" layout="vertical">
