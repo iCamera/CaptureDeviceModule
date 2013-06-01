@@ -23,6 +23,11 @@ AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 BOOL frontCameraMode = NO;
 
 
+-(void)dealloc{
+    NSLog( @"CapturedeviceFinderProxy dealloc" );
+    [super dealloc];
+}
+
 
 -(void)frameSizeChanged:(CGRect)frame bounds:(CGRect)bounds {
 	NSLog( @"CapturedeviceFinderProxy frameSizeChanged in proxy %@ %@", NSStringFromCGRect(frame), NSStringFromCGRect(bounds) );

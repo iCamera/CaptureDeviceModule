@@ -48,9 +48,9 @@
 
 #pragma mark Cleanup 
 
--(void)dealloc
-{
+-(void)dealloc{
 	// release any resources that have been retained by the module
+    NSLog( @"CapturedeviceModule dealloc" );
 	[super dealloc];
 }
 

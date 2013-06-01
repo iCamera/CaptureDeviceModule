@@ -20,6 +20,11 @@
 }
 
 
+-(void)dealloc{
+    NSLog( @"CapturedeviceFinder dealloc" );
+    [super dealloc];
+}
+
 
 /*
  
