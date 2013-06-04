@@ -344,10 +344,14 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 			camera.setParameters(param);
 		}
+		boolean focus = false;
+		if(options.containsKey("focus")){
+			focus = TiConvert.toBoolean(options.get("focus"));
+		}
 
 		String focusMode = param.getFocusMode();
-		if (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
-			.equals(Parameters.FOCUS_MODE_INFINITY))) {
+		if (focus && (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
+			.equals(Parameters.FOCUS_MODE_INFINITY)))) {
 			camera.autoFocus(this);
 		} else {
 			camera.takePicture(this, null, this);
