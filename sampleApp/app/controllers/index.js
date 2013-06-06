@@ -4,6 +4,8 @@
 
 var finder;
 var opened = false;
+var waitingForShutter = false;// シャッター連射対応用フラグ
+
 
 
 
@@ -49,6 +51,37 @@ function close(){
 }
 
 
+function shutter(){
+	if( waitingForShutter ){
+		trace( "シャッターが切れるのを待っています" );
+		return;
+	}
+	trace( "シャッターを切ります" );
+	finder.takePhoto( {saveToDevice:false} )
+	waitingForShutter = true;
+}
+
+function changeToFrontCamera(){
+	finder.changeToFrontCamera();
+}
+function changeToBackCamera(){
+	finder.changeToBackCamera();
+}
+
+function setFlashModeOn(){
+	finder.setFlashModeOn();
+}
+function setFlashModeOff(){
+	finder.setFlashModeOff();
+}
+function setFlashModeAuto( e ){
+	finder.setFlashModeAuto();
+}
+
+
+
+
+
 function _onFinderClick(e){
 	var horizontal = 1 - ( e.x / e.source.size.width )
 	var vertical = ( e.y / e.source.size.height )
@@ -60,8 +93,9 @@ function _onFocusComplete(){
 	console.log( "フォーカス完了!" );
 }
 function _onShutter(e){
-	finder.opacity = 0;
-	finder.animate( {opacity:1, duration:200} )
+	waitingForShutter = false;
+	// finder.opacity = 0;
+	// finder.animate( {opacity:1, duration:200} )
 
 }
 function _onImageProcessed(e){
@@ -257,26 +291,6 @@ function updateListItems(){
 
 
 
-function shutter(){
-	finder.takePhoto( {saveToDevice:true} )
-}
-
-function changeToFrontCamera(){
-	finder.changeToFrontCamera();
-}
-function changeToBackCamera(){
-	finder.changeToBackCamera();
-}
-
-function setFlashModeOn(){
-	finder.setFlashModeOn();
-}
-function setFlashModeOff(){
-	finder.setFlashModeOff();
-}
-function setFlashModeAuto(){
-	finder.setFlashModeAuto();
-}
 
 // Filter the fetched collection before rendering. Don't return the
 // collection itself, but instead return an array of models 

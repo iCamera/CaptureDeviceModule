@@ -14,7 +14,7 @@
 				<View right="0" width="100dp" layout="vertical">
 					<Button title="前カメラ" onClick="changeToFrontCamera" />
 					<Button title="後カメラ" onClick="changeToBackCamera" />
-					<Button title="shutter" onClick="shutter" />
+					<Button title="shutter" onSingletap="shutter" /><!-- onSingletapにすると連打に対応出来ます。 -->
 					<Button title="FlashON" onClick="setFlashModeOn" />
 					<Button title="FlashOFF" onClick="setFlashModeOff" />
 					<Button title="FlashAUTO" onClick="setFlashModeAuto" />
