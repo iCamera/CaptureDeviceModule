@@ -181,7 +181,7 @@ BOOL frontCameraMode = NO;
                                                  TiBlob* original_blob = [[[TiBlob alloc] initWithData:data mimetype:@"image/jpeg"] autorelease];
                                                  
                                                  // 送信用データ(縦852pxサイズ)を作成
-                                                 UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 640, 852)];
+                                                 UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 640, 852)];// 重い
                                                  NSData* content_data = UIImageJPEGRepresentation( content_img, 0.8 );
                                                  TiBlob* content_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
                                                  
@@ -227,7 +227,8 @@ BOOL frontCameraMode = NO;
         captureSession = [[AVCaptureSession alloc] init];
         [captureSession beginConfiguration];
         [captureSession addInput:videoInput];
-        captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
+//        captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
+        captureSession.sessionPreset = AVCaptureSessionPreset1280x720;// 撮影する画像のサイズを小さくして、後のリサイズ処理を高速化
         [captureSession commitConfiguration];
         
         previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:captureSession];
@@ -292,6 +293,11 @@ BOOL frontCameraMode = NO;
 //UIImageをリサイズするクラス
 - (UIImage*)resizeImage:(UIImage *)img rect:(CGRect)rect{
     UIGraphicsBeginImageContext(rect.size);
+    
+    // 補完処理を省略してリサイズを高速化
+//    CGContextRef context = UIGraphicsGetCurrentContext();
+//	CGContextSetInterpolationQuality(context, kCGInterpolationNone);
+    
     [img drawInRect:rect];
     UIImage* resizedImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
