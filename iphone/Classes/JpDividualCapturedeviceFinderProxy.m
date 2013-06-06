@@ -21,6 +21,7 @@ AVCaptureStillImageOutput* imageOutput;
 AVCaptureDeviceInput* frontFacingCameraDeviceInput;// 前面カメラ
 AVCaptureDeviceInput* backFacingCameraDeviceInput;// 背面カメラ
 BOOL frontCameraMode = NO;
+BOOL waitingForShutter = NO;
 
 
 -(void)dealloc{
@@ -155,6 +156,13 @@ BOOL frontCameraMode = NO;
 -(void)takePhoto:(id)args{
     NSLog( @"CapturedeviceFinderProxy takePhoto" );
     
+    if( waitingForShutter ){
+        NSLog( @"前回のシャッターが切れるのを待っているので新しく撮影処理は開始しません" );
+        return;
+    }
+    
+    waitingForShutter = YES;
+    
     // JavaScript からわたってきたパラメータを解釈
     ENSURE_SINGLE_ARG( args, NSDictionary );
     NSLog( @"%@", args );
@@ -164,6 +172,7 @@ BOOL frontCameraMode = NO;
 	[imageOutput captureStillImageAsynchronouslyFromConnection:connection
                                              completionHandler:^( CMSampleBufferRef imageDataSampleBuffer, NSError *error ){
                                                  NSLog( @"シャッターを切りました" );
+                                                 waitingForShutter = NO;
                                                  
                                                  // イベント発行
                                                  [self fireEvent:@"shutter" withObject:nil];
