@@ -205,7 +205,7 @@ BOOL waitingForShutter = NO;
                                                  [self fireEvent:@"imageProcessed" withObject:dic];
                                                  
                                                  if( [saveToDevice isEqualToNumber:@1] ){
-                                                     ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
+                                                     ALAssetsLibrary *library = [[[ALAssetsLibrary alloc] init] autorelease];
                                                      [library writeImageToSavedPhotosAlbum:image.CGImage orientation:image.imageOrientation completionBlock:^(NSURL *assetURL, NSError *error){}];
                                                  }
                                              }
@@ -233,7 +233,7 @@ BOOL waitingForShutter = NO;
         AVCaptureDeviceInput *videoInput = [AVCaptureDeviceInput deviceInputWithDevice:captureDevice error:&error];
         
         // セッション初期化
-        captureSession = [[AVCaptureSession alloc] init];
+        captureSession = [[[AVCaptureSession alloc] init] autorelease];
         [captureSession beginConfiguration];
         [captureSession addInput:videoInput];
 //        captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
@@ -247,7 +247,7 @@ BOOL waitingForShutter = NO;
         [self.view.layer insertSublayer:previewLayer atIndex:0];
         
         // 出力の初期化
-        imageOutput = [[AVCaptureStillImageOutput alloc] init];
+        imageOutput = [[[AVCaptureStillImageOutput alloc] init] autorelease];
         [captureSession addOutput:imageOutput];
         
         // セッション開始
