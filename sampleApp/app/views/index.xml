@@ -12,18 +12,19 @@
 
 			<View left="0" bottom="0" width="Ti.UI.FILL" height="320dp" id="camera_view" backgroundColor="#ddd">
 				<View right="0" width="100dp" layout="vertical">
-					<Button title="前カメラ" onClick="changeToFrontCamera" />
-					<Button title="後カメラ" onClick="changeToBackCamera" />
+					<Button visible="false" id="changeToFrontCamera_btn" title="前カメラ" onClick="changeToFrontCamera" />
+					<Button visible="false" id="changeToBackCamera_btn" title="後カメラ" onClick="changeToBackCamera" />
 					<Button title="shutter" onSingletap="shutter" /><!-- onSingletapにすると連打に対応出来ます。 -->
-					<Button title="FlashON" onClick="setFlashModeOn" />
-					<Button title="FlashOFF" onClick="setFlashModeOff" />
-					<Button title="FlashAUTO" onClick="setFlashModeAuto" />
+					<Button visible="false" id="flashOn_btn" title="FlashON" onClick="setFlashModeOn" />
+					<Button visible="false" id="flashOff_btn" title="FlashOFF" onClick="setFlashModeOff" />
+					<Button visible="false" id="flashAuto_btn" title="FlashAUTO" onClick="setFlashModeAuto" />
 				</View>
 				<!-- <ImageView id="iris_iv" height="320"> -->
 			</View>
 		</View>
 
 		<Button top="0" left="0" title="open" onClick="open" />
+		<Switch id="saveDevice_switch" top="0" title="本体保存" />
 		<Button top="0" right="0" title="close" onClick="close" />
 
 

@@ -29,6 +29,16 @@ function open(){
 	finder.addEventListener( "shutter", _onShutter )
 	finder.addEventListener( "imageProcessed", _onImageProcessed )
 
+	var devices = finder.getDevices()
+	if( devices.length == 0 ){
+		return;
+	}
+
+	if( devices.length == 2 ){
+		$.changeToFrontCamera_btn.visible = true;
+		$.changeToBackCamera_btn.visible = true;
+	}
+
 	finder.start();
 	$.camera_view.add( finder )
 	opened = true;
@@ -57,15 +67,17 @@ function shutter(){
 		return;
 	}
 	trace( "シャッターを切ります" );
-	finder.takePhoto( {saveToDevice:false} )
+	finder.takePhoto( {saveToDevice:$.saveDevice_switch.value, lat:35.6650, lng:139.7587} )
 	waitingForShutter = true;
 }
 
 function changeToFrontCamera(){
 	finder.changeToFrontCamera();
+	_updateFlashButtons();
 }
 function changeToBackCamera(){
 	finder.changeToBackCamera();
+	_updateFlashButtons();
 }
 
 function setFlashModeOn(){
@@ -81,13 +93,25 @@ function setFlashModeAuto( e ){
 
 
 
+function _updateFlashButtons(){
+	if( finder.getHasFlash() ){
+		$.flashOn_btn.visible = true;
+		$.flashOff_btn.visible = true;
+		$.flashAuto_btn.visible = true;
+	} else {
+		$.flashOn_btn.visible = false;
+		$.flashOff_btn.visible = false;
+		$.flashAuto_btn.visible = false;
+	}
+}
+
+
 
 function _onFinderClick(e){
 	var horizontal = 1 - ( e.x / e.source.size.width )
 	var vertical = ( e.y / e.source.size.height )
 	console.log( horizontal +", "+ vertical );
 	finder.focusAndExposureAtPoint( {x:vertical, y:horizontal} );
-
 }
 function _onFocusComplete(){
 	console.log( "フォーカス完了!" );

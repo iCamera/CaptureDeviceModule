@@ -9,7 +9,7 @@ if result != 0:
 
 
 os.system("cp ../iphone/jp.dividual.capturedevice-iphone-1.0.zip .")
-result = os.system('titanium build -p ios -b -T device -D development -V "Koichi Yamamoto (F5E22YQX2X)" -P 9939BDB5-FEE8-4EF8-81B1-DDF443BC29A1')
+result = os.system('titanium build -p ios -b -T device -D development -V "Koichi Yamamoto (F5E22YQX2X)" -P 2579BFF5-84CA-47D7-9EB1-7A12E2D52DDD')
 if result != 0:
 	print( "ビルド失敗しました。" )
 	exit()
