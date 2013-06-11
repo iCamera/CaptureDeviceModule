@@ -190,18 +190,18 @@ BOOL waitingForShutter = NO;
                                                  TiBlob* original_blob = [[[TiBlob alloc] initWithData:data mimetype:@"image/jpeg"] autorelease];
                                                  
                                                  // 送信用データ(縦852pxサイズ)を作成
-                                                 UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 640, 852)];// 重い
-                                                 NSData* content_data = UIImageJPEGRepresentation( content_img, 0.8 );
-                                                 TiBlob* content_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
+//                                                 UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 640, 852)];// 重い
+//                                                 NSData* content_data = UIImageJPEGRepresentation( content_img, 0.8 );
+//                                                 TiBlob* content_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
                                                  
                                                  // サムネイルのjpegデータを作成
-                                                 UIImage* thumbnail_img = [self resizeImage:content_img rect:CGRectMake(0, 0, 150, 200)];
+                                                 UIImage* thumbnail_img = [self resizeImage:image rect:CGRectMake(0, 0, 150, 200)];
 //                                                 UIImage* thumbnail_img = [self imageByScalingAndCropping:content_img ForSize:CGSizeMake(150, 150)];
                                                  NSData *thumbnail_data = UIImageJPEGRepresentation( thumbnail_img, 0.8 );
                                                  TiBlob* thumbnail_blob = [[[TiBlob alloc] initWithData:thumbnail_data mimetype:@"image/jpeg"] autorelease];
                                                  
                                                  // イベント発行
-                                                 NSDictionary *dic = @{@"original":original_blob, @"content":content_blob, @"thumbnail":thumbnail_blob, @"key2":@"value2"};
+                                                 NSDictionary *dic = @{@"original":original_blob, @"content":original_blob, @"thumbnail":thumbnail_blob, @"key2":@"value2"};
                                                  [self fireEvent:@"imageProcessed" withObject:dic];
                                                  
                                                  if( [saveToDevice isEqualToNumber:@1] ){
