@@ -60,7 +60,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	public static KrollObject callbackContext;
 	public static boolean saveToPhotoGallery = false;
 
-	public FinderView(TiViewProxy proxy) {
+	public FinderView(TiViewProxy proxy, boolean finderStart) {
 		super(proxy);		
 
 		focusMatrix = new Matrix();
@@ -73,7 +73,17 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 		finderView = this;
 
+		if(finderStart){
+			this.openCamera(currentFacing);
+		}
+	}
+
+	public void start() {
 		this.openCamera(currentFacing);
+	}
+
+	public void stop() {
+		this.releaseCamera();
 	}
 
 	private void openCamera(int facing) {
