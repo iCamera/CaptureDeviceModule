@@ -14,7 +14,6 @@
 @implementation JpDividualCapturedeviceFinderProxy
 
 BOOL started = NO;
-BOOL initialized = NO;
 AVCaptureDevice* captureDevice;
 AVCaptureSession* captureSession;
 AVCaptureVideoPreviewLayer* previewLayer;
@@ -234,17 +233,22 @@ BOOL waitingForShutter = NO;
 -(void)start:(id)args{
     NSLog( @"CapturedeviceFinderProxy start" );
     
-    if( initialized == NO ){
+    if( started == NO ){
+        started = YES;
+        //    self.view.backgroundColor = [UIColor redColor];
+        
         // カメラを取得して初期化
         NSError *error = nil;
+        
         captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+        [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
         AVCaptureDeviceInput *videoInput = [AVCaptureDeviceInput deviceInputWithDevice:captureDevice error:&error];
         
-        captureSession = [[[AVCaptureSession alloc] init] autorelease];
         // セッション初期化
+        captureSession = [[[AVCaptureSession alloc] init] autorelease];
         [captureSession beginConfiguration];
         [captureSession addInput:videoInput];
-        //        captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
+//        captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
         captureSession.sessionPreset = AVCaptureSessionPreset1280x720;// 撮影する画像のサイズを小さくして、後のリサイズ処理を高速化
         [captureSession commitConfiguration];
         
@@ -254,20 +258,12 @@ BOOL waitingForShutter = NO;
         NSLog( @"%@", NSStringFromCGRect(previewLayer.frame) );
         [self.view.layer insertSublayer:previewLayer atIndex:0];
         
-        [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
-        
-        
         // 出力の初期化
         imageOutput = [[[AVCaptureStillImageOutput alloc] init] autorelease];
         [captureSession addOutput:imageOutput];
         
-        initialized = YES;
-    }
-    
-    if( started == NO ){
         // セッション開始
         [captureSession startRunning];
-        started = YES;
     } else {
         NSLog( @"すでに開始されています" );
     }
@@ -278,11 +274,11 @@ BOOL waitingForShutter = NO;
     if( started ){
         // セッション終了
         [captureSession stopRunning];
-//        [captureDevice removeObserver:self forKeyPath:@"adjustingFocus" context:nil];
-//        AVCaptureInput* input = [captureSession.inputs objectAtIndex:0];
-//        [captureSession removeInput:input];
-//        AVCaptureVideoDataOutput* output = (AVCaptureVideoDataOutput*)[captureSession.outputs objectAtIndex:0];
-//        [captureSession removeOutput:output];
+        [captureDevice removeObserver:self forKeyPath:@"adjustingFocus" context:nil];
+        AVCaptureInput* input = [captureSession.inputs objectAtIndex:0];
+        [captureSession removeInput:input];
+        AVCaptureVideoDataOutput* output = (AVCaptureVideoDataOutput*)[captureSession.outputs objectAtIndex:0];
+        [captureSession removeOutput:output];
         started = NO;
     } else {
         NSLog( @"まだ開始されていません" );
