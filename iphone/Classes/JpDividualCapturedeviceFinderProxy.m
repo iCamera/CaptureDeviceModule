@@ -264,6 +264,8 @@ BOOL waitingForShutter = NO;
         
         // セッション開始
         [captureSession startRunning];
+    } else {
+        NSLog( @"すでに開始されています" );
     }
 }
 
@@ -278,6 +280,8 @@ BOOL waitingForShutter = NO;
         AVCaptureVideoDataOutput* output = (AVCaptureVideoDataOutput*)[captureSession.outputs objectAtIndex:0];
         [captureSession removeOutput:output];
         started = NO;
+    } else {
+        NSLog( @"まだ開始されていません" );
     }
 }
 
