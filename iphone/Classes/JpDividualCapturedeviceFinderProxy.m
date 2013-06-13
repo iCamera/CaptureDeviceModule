@@ -35,6 +35,18 @@ BOOL waitingForShutter = NO;
     previewLayer.frame = bounds;
 }
 
+-(id)getDevices:(id)args{
+    NSMutableArray *out_array = [@[] mutableCopy];
+    NSArray *devices = [AVCaptureDevice devices];
+    for (AVCaptureDevice *device in devices) {
+        if ([device hasMediaType:AVMediaTypeVideo]) {
+            [out_array addObject:[device localizedName]];
+        }
+    }
+    NSLog( @"%@", out_array );
+    return out_array;
+}
+
 
 
 
