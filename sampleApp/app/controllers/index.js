@@ -2,10 +2,19 @@
 
 
 
-var finder;
 var opened = false;
 var waitingForShutter = false;// シャッター連射対応用フラグ
 
+
+
+var testmodule = require('jp.dividual.capturedevice');
+var finder = testmodule.createFinder({
+	color:"white",
+	left: 0,
+	bottom: 0,
+	width: "240dp",
+	height: "320dp",
+});
 
 
 
@@ -16,14 +25,6 @@ function open(){
 		Ti.API.info( "すでに開始しています" )
 		return;
 	}
-	var testmodule = require('jp.dividual.capturedevice');
-	finder = testmodule.createFinder({
-		color:"white",
-		left: 0,
-		bottom: 0,
-		width: "240dp",
-		height: "320dp",
-	});
 	finder.addEventListener( "click", _onFinderClick )
 	finder.addEventListener( "focusComplete", _onFocusComplete )
 	finder.addEventListener( "shutter", _onShutter )
