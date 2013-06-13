@@ -20,6 +20,7 @@ public class FinderProxy extends TiViewProxy
 {
 	private static final String TAG = "FinderProxy";
 	private FinderView finderView;
+	private boolean finderStart = false;
 
 	/*	
 	public FinderProxy(TiContext tiContext) {
@@ -29,8 +30,24 @@ public class FinderProxy extends TiViewProxy
 	
 	@Override
 	public TiUIView createView(Activity activity) {
-		finderView = new FinderView(this);
+		finderView = new FinderView(this, finderStart);
 		return finderView;
+	}
+
+	@Kroll.method
+	public void start() {
+		if (FinderView.finderView != null) {
+			FinderView.finderView.start();
+		}
+		finderStart = true;
+	}
+
+	@Kroll.method
+	public void stop() {
+		if (FinderView.finderView != null) {
+			FinderView.finderView.stop();
+		}
+		finderStart = false;
 	}
 
 	@Kroll.method

@@ -67,7 +67,11 @@ function shutter(){
 		return;
 	}
 	trace( "シャッターを切ります" );
-	finder.takePhoto( {saveToDevice:$.saveDevice_switch.value, lat:35.6650, lng:139.7587} )
+	var saveDevice = false;
+	if($.saveDevice_switch.value != null){
+		saveDevice = $.saveDevice_switch.value;
+	}
+	finder.takePhoto( {saveToDevice:saveDevice, lat:35.6650, lng:139.7587} )
 	waitingForShutter = true;
 }
 
