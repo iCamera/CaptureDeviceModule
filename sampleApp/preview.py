@@ -14,5 +14,11 @@ if result != 0:
 	print( "ビルド失敗しました。" )
 	exit()
 
-os.system('./transporter_chief.rb -v build/iphone/build/Debug-iphoneos/CaptureDeviceApp.app')
+result = os.system('./transporter_chief.rb -v build/iphone/build/Debug-iphoneos/CaptureDeviceApp.app')
+if result != 0:
+	print( "転送失敗しました。リトライするには ./transporter_chief.rb -v build/iphone/build/Debug-iphoneos/CaptureDeviceApp.app" )
+	os.system('terminal-notifier -message "デバイスへのインストールに失敗しました"')
+	exit()
+
+os.system('terminal-notifier -message "デバイスへのインストールが完了しました"')
 
