@@ -10,6 +10,7 @@ var win = Ti.UI.createWindow({
 });
 var label = Ti.UI.createLabel();
 win.add(label);
+win.orientationModes = [Titanium.UI.PORTRAIT];
 win.open();
 
 // TODO: write your module tests here
