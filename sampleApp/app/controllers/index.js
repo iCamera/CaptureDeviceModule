@@ -51,8 +51,10 @@ function close(){
 		return;
 	}
 
-	$.irisTop_view.animate( {height:"160dp", duration:200} );
-	$.irisBottom_view.animate( {height:"160dp", duration:200} );
+	if( !Alloy.Globals.isAndroid ){
+		$.irisTop_view.animate( {height:"160dp", duration:200} );
+		$.irisBottom_view.animate( {height:"160dp", duration:200} );
+	}
 
 	finder.removeEventListener( "click", _onFinderClick )
 	finder.removeEventListener( "focusComplete", _onFocusComplete )
@@ -102,8 +104,10 @@ function setFlashModeAuto( e ){
 
 
 function _onSessionStart(){
-	$.irisTop_view.animate( {height:"10dp", duration:200} );
-	$.irisBottom_view.animate( {height:"10dp", duration:200} );
+	if( !Alloy.Globals.isAndroid ){
+		$.irisTop_view.animate( {height:"10dp", duration:200} );
+		$.irisBottom_view.animate( {height:"10dp", duration:200} );
+	}
 }
 
 
