@@ -79,31 +79,31 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 		finderView = this;
 
+		orientationListener = new OrientationEventListener(context){
+			@Override
+			public void onOrientationChanged(int orientation) {
+				if (orientation == OrientationEventListener.ORIENTATION_UNKNOWN) return;
+				currentDeviceOrientation = Util.roundOrientation(orientation, currentDeviceOrientation);
+				Log.d(TAG, String.format("onOrientationChanged deviceOrientation:%d", currentDeviceOrientation), Log.DEBUG_MODE);
+			}
+		};
+
+		if (context instanceof TiBaseActivity) {
+			((TiBaseActivity)context).addOnLifecycleEventListener(this);
+		}
+
 		if(finderStart){
 			this.start();
 		}
 	}
 
 	public void start() {
-		Context context = proxy.getActivity();
-		orientationListener = new OrientationEventListener(context){
-            @Override
-            public void onOrientationChanged(int orientation) {
-				if (orientation == OrientationEventListener.ORIENTATION_UNKNOWN) return;
-				currentDeviceOrientation = Util.roundOrientation(orientation, currentDeviceOrientation);
-				Log.d(TAG, String.format("onOrientationChanged deviceOrientation:%d", currentDeviceOrientation), Log.DEBUG_MODE);
-            }
-        };
-        orientationListener.enable();
-
-		if (context instanceof TiBaseActivity) {
-			((TiBaseActivity)context).addOnLifecycleEventListener(this);
-		}
-
+		orientationListener.enable();
 		this.openCamera(currentFacing);
 	}
 
 	public void stop() {
+		orientationListener.disable();
 		this.releaseCamera();
 	}
 
