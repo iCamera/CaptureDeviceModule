@@ -79,13 +79,14 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		if(finderStart){
 			this.openCamera(currentFacing);
 		}
+
+		if (context instanceof TiBaseActivity) {
+			((TiBaseActivity)context).addOnLifecycleEventListener(this);
+		}
 	}
 
 	public void start() {
 		this.openCamera(currentFacing);
-		if (context instanceof TiBaseActivity) {
-			((TiBaseActivity)context).addOnLifecycleEventListener(this);
-		}
 	}
 
 	public void stop() {
