@@ -207,39 +207,56 @@ public class CaptureDeviceModule extends KrollModule
 		d.put(EVENT_PROPERTY_ORIGINAL, imageData);
 
 		File originalFile = null;
-		File rotatedFile = null;
+		File preprocessedFile = null;
 		try {
 			originalFile = CaptureDeviceModule.writeTemporaryImageFile("original", imageData);
 			Log.d(TAG, "createDictForImage: saved original to file", Log.DEBUG_MODE);
 
-			rotatedFile = CaptureDeviceModule.getTemporaryImageFile("rotated");
-			// rotate AND down-sample enough to be able to decode it within the VM capacity
-			CaptureDeviceModule.transformBitmap(originalFile, rotatedFile, new BitmapTransformationCallback() {
+			ExifInterface originalExif = new ExifInterface(originalFile.getAbsolutePath());
+			int exifOrientation = originalExif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+			boolean hasOrientation = ExifInterface.ORIENTATION_UNDEFINED != exifOrientation;
+			if (!hasOrientation) {
+				Log.d(TAG, "createDictForImage: NO orientation", Log.DEBUG_MODE);
+			} else {
+				Log.d(TAG, String.format("createDictForImage: HAS orientation:%d", exifOrientation), Log.DEBUG_MODE);
+			}
+			Log.d(TAG, String.format("createDictForImage: Exif image w:%d h:%d",
+									 originalExif.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, -1),
+									 originalExif.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, -1)),
+				  Log.DEBUG_MODE);
+
+			preprocessedFile = CaptureDeviceModule.getTemporaryImageFile("preprocessed");
+
+			// down-sample enough to be able to decode it within the VM capacity
+			CaptureDeviceModule.transformBitmap(originalFile, preprocessedFile, new BitmapTransformationCallback() {
 					public Bitmap onTransformBitmap(Bitmap source) {
 						// Create transform matrix
 						Matrix matrix = new Matrix();
-						matrix.postRotate(rotationDegrees.intValue());
+						// Don't rotate on our own: already rotated by the hardware according to Camera.setRotation
+						//matrix.postRotate(rotationDegrees.intValue());
 						return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
 					}
 				});
 
 			List<TagInfo> excludedFields = new ArrayList<TagInfo>();
-			excludedFields.add(TiffTagConstants.TIFF_TAG_ORIENTATION);
+			// Don't exclude orientation info: it's set by the hardware according to Camera.setRotation
+			//			excludedFields.add(TiffTagConstants.TIFF_TAG_ORIENTATION);
 
-			CaptureDeviceModule.copyExifData(originalFile, rotatedFile, excludedFields);
-			Log.d(TAG, "createDictForImage: rotated and copied exif (rotation:" + rotationDegrees.toString() + ")", Log.DEBUG_MODE);
+			CaptureDeviceModule.copyExifData(originalFile, preprocessedFile, excludedFields);
+			Log.d(TAG, "createDictForImage: proprocessed and copied exif (rotation:" + rotationDegrees.toString() + ")", Log.DEBUG_MODE);
 
-			TiBlob sourceBlob = CaptureDeviceModule.imageBlobFromFile(rotatedFile);
+			TiBlob sourceBlob = CaptureDeviceModule.imageBlobFromFile(preprocessedFile);
 			int width = sourceBlob.getWidth();
 			int height = sourceBlob.getHeight();
 			float contentHeight = height * PHOTO_WIDTH_CONTENT / width;
 			float thumbnailHeight = height * PHOTO_WIDTH_THUMBNAIL / width;
 
 			d.put(EVENT_PROPERTY_CONTENT,
-				  CaptureDeviceModule.resizeAndCopyExifData(rotatedFile, PHOTO_WIDTH_CONTENT, contentHeight, excludedFields));
+				  CaptureDeviceModule.resizeAndCopyExifData(preprocessedFile, PHOTO_WIDTH_CONTENT, contentHeight, excludedFields));
 			Log.d(TAG, "createDictForImage: resized for content", Log.DEBUG_MODE);
+
 			d.put(EVENT_PROPERTY_THUMBNAIL,
-				  CaptureDeviceModule.resizeAndCopyExifData(rotatedFile, PHOTO_WIDTH_THUMBNAIL, thumbnailHeight, excludedFields));
+				  CaptureDeviceModule.resizeAndCopyExifData(preprocessedFile, PHOTO_WIDTH_THUMBNAIL, thumbnailHeight, excludedFields));
 			Log.d(TAG, "createDictForImage: resized for thumbnail", Log.DEBUG_MODE);
 		} catch (IOException e) {
 			d.putCodeAndMessage(MediaModule.UNKNOWN_ERROR, e.toString());
@@ -248,8 +265,8 @@ public class CaptureDeviceModule extends KrollModule
 			if (originalFile != null) {
 				if (originalFile.exists()) originalFile.delete();
 			}
-			if (rotatedFile != null) {
-				if (rotatedFile.exists()) rotatedFile.delete();
+			if (preprocessedFile != null) {
+				if (preprocessedFile.exists()) preprocessedFile.delete();
 			}
 		}
 

@@ -33,6 +33,7 @@ import android.content.Context;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
@@ -45,6 +46,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 	private CameraLayout cameraLayout;
 	private boolean previewRunning = false;
+	private int currentDeviceOrientation = OrientationEventListener.ORIENTATION_UNKNOWN;
 	private int currentUIRotation;
 	private int currentUIRotationDegrees = 0;
 	private int currentFacing = Camera.CameraInfo.CAMERA_FACING_BACK;
@@ -57,6 +59,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	private Matrix focusMatrix;
 	private int previewWidth;
 	private int previewHeight;
+	private OrientationEventListener orientationListener;
 
 	public static FinderView finderView = null;
 
@@ -76,20 +79,31 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 		finderView = this;
 
-		if(finderStart){
-			this.openCamera(currentFacing);
-		}
+		orientationListener = new OrientationEventListener(context){
+			@Override
+			public void onOrientationChanged(int orientation) {
+				if (orientation == OrientationEventListener.ORIENTATION_UNKNOWN) return;
+				currentDeviceOrientation = Util.roundOrientation(orientation, currentDeviceOrientation);
+				Log.d(TAG, String.format("onOrientationChanged deviceOrientation:%d", currentDeviceOrientation), Log.DEBUG_MODE);
+			}
+		};
 
 		if (context instanceof TiBaseActivity) {
 			((TiBaseActivity)context).addOnLifecycleEventListener(this);
 		}
+
+		if(finderStart){
+			this.start();
+		}
 	}
 
 	public void start() {
+		orientationListener.enable();
 		this.openCamera(currentFacing);
 	}
 
 	public void stop() {
+		orientationListener.disable();
 		this.releaseCamera();
 	}
 
@@ -359,12 +373,21 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			param.setGpsLongitude(lng);
 			//Log.d(TAG, String.format("log: %f", lng));
 
-			camera.setParameters(param);
 		}
 		boolean focus = false;
 		if(options.containsKey("focus")){
 			focus = TiConvert.toBoolean(options.get("focus"));
 		}
+
+		int cameraOrientation = this.getCameraOrientation();
+		// 0: fixed to portrait
+		// currentDeviceOrientation: rotate according to the device's orientation
+		int deviceOrientation = currentDeviceOrientation; 
+		int jpegRotation = Util.getJpegRotation(this.isFacingFront(), cameraOrientation, deviceOrientation);
+		param.setRotation(jpegRotation);
+		Log.d(TAG, String.format("setRotation:%d cameraOrientation:%d deviceOrientation:%d", jpegRotation, cameraOrientation, deviceOrientation), Log.DEBUG_MODE);
+
+		camera.setParameters(param);
 
 		String focusMode = param.getFocusMode();
 		if (focus && (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
@@ -376,9 +399,11 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	}
 
 	public void onResume(Activity activity) {
+        orientationListener.enable();
 	}
 	
 	public void onPause(Activity activity) {
+        orientationListener.disable();
 	}
 
 	public void onDestroy(Activity activity) {
@@ -528,6 +553,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		super.release();
 		finderView = null;
 		this.releaseCamera();
+		orientationListener.disable();
 	}
 
 	private void onError(int code, String message)
