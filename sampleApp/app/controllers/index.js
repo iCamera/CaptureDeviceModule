@@ -345,6 +345,7 @@ function dataFilter( collection ){
 
 
 
+$.index.orientationModes = [Titanium.UI.PORTRAIT];
 $.index.open();
 
 
