@@ -28,6 +28,7 @@ function open(){
 	finder.addEventListener( "focusComplete", _onFocusComplete )
 	finder.addEventListener( "shutter", _onShutter )
 	finder.addEventListener( "imageProcessed", _onImageProcessed )
+	finder.addEventListener( "sessionStart", _onSessionStart )
 
 	var devices = finder.getDevices()
 	if( devices.length == 0 ){
@@ -50,10 +51,14 @@ function close(){
 		return;
 	}
 
+	$.irisTop_view.animate( {height:"160dp", duration:200} );
+	$.irisBottom_view.animate( {height:"160dp", duration:200} );
+
 	finder.removeEventListener( "click", _onFinderClick )
 	finder.removeEventListener( "focusComplete", _onFocusComplete )
 	finder.removeEventListener( "shutter", _onShutter )
 	finder.removeEventListener( "imageProcessed", _onImageProcessed )
+	finder.removeEventListener( "sessionStart", _onSessionStart )
 
 	$.camera_view.remove( finder )
 	finder.stop();
@@ -95,6 +100,11 @@ function setFlashModeAuto( e ){
 }
 
 
+
+function _onSessionStart(){
+	$.irisTop_view.animate( {height:"10dp", duration:200} );
+	$.irisBottom_view.animate( {height:"10dp", duration:200} );
+}
 
 
 function _updateFlashButtons(){

@@ -11,6 +11,8 @@ import org.appcelerator.kroll.KrollFunction;
 import org.appcelerator.kroll.KrollObject;
 import org.appcelerator.kroll.common.Log;
 import org.appcelerator.titanium.TiApplication;
+import org.appcelerator.titanium.TiLifecycle;
+import org.appcelerator.titanium.TiBaseActivity;
 import org.appcelerator.titanium.TiBlob;
 import org.appcelerator.titanium.TiC;
 import org.appcelerator.titanium.proxy.TiViewProxy;
@@ -19,6 +21,7 @@ import org.appcelerator.titanium.view.TiUIView;
 
 import ti.modules.titanium.media.MediaModule;
 
+import android.app.Activity;
 import android.content.res.Configuration;
 import android.hardware.Camera;
 import android.hardware.Camera.Area;
@@ -35,7 +38,7 @@ import android.view.SurfaceHolder;
 import android.view.View;
 
 
-public class FinderView extends TiUIView implements SurfaceHolder.Callback, Camera.PictureCallback, Camera.ShutterCallback, Camera.AutoFocusCallback {
+public class FinderView extends TiUIView implements SurfaceHolder.Callback, Camera.PictureCallback, Camera.ShutterCallback, Camera.AutoFocusCallback, TiLifecycle.OnLifecycleEvent {
 
 	private static final String TAG = "FinderView";
 	private static Camera camera;
@@ -80,6 +83,9 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 	public void start() {
 		this.openCamera(currentFacing);
+		if (context instanceof TiBaseActivity) {
+			((TiBaseActivity)context).addOnLifecycleEventListener(this);
+		}
 	}
 
 	public void stop() {
@@ -366,6 +372,21 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		} else {
 			camera.takePicture(this, null, this);
 		}
+	}
+
+	public void onResume(Activity activity) {
+	}
+	
+	public void onPause(Activity activity) {
+	}
+
+	public void onDestroy(Activity activity) {
+	}
+
+	public void onStart(Activity activity) {
+	}
+
+	public void onStop(Activity activity) {	
 	}
 
 	public void onAutoFocus(boolean success, Camera camera) {

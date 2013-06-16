@@ -35,6 +35,18 @@ BOOL waitingForShutter = NO;
     previewLayer.frame = bounds;
 }
 
+-(id)getDevices:(id)args{
+    NSMutableArray *out_array = [@[] mutableCopy];
+    NSArray *devices = [AVCaptureDevice devices];
+    for (AVCaptureDevice *device in devices) {
+        if ([device hasMediaType:AVMediaTypeVideo]) {
+            [out_array addObject:[device localizedName]];
+        }
+    }
+    NSLog( @"%@", out_array );
+    return out_array;
+}
+
 
 
 
@@ -141,11 +153,18 @@ BOOL waitingForShutter = NO;
 
 // フォーカス完了時にイベント発行
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
-    NSLog( @"CapturedeviceFinderProxy observeValueForKeyPath:%@", keyPath );
+    NSLog( @"CapturedeviceFinderProxy observeValueForKeyPath:%@ change=%@", keyPath, change );
     if ([keyPath isEqual:@"adjustingFocus"]) {
-        if ([[change objectForKey:NSKeyValueChangeNewKey] boolValue] == NO) {
-            // イベント発行
+        if ([[change objectForKey:NSKeyValueChangeNewKey] boolValue] == YES ){
+            [self fireEvent:@"focusStart" withObject:nil];
+        } else {
             [self fireEvent:@"focusComplete" withObject:nil];
+        }
+    } else if( [keyPath isEqual:@"running"] ){
+        if( [[change objectForKey:NSKeyValueChangeNewKey] boolValue] == YES ){
+            [self fireEvent:@"sessionStart" withObject:nil];// カメラ起動完了
+        } else {
+            [self fireEvent:@"sessionStop" withObject:nil];// カメラ終了完了
         }
     }
 }
@@ -195,8 +214,8 @@ BOOL waitingForShutter = NO;
 //                                                 TiBlob* content_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
                                                  
                                                  // サムネイルのjpegデータを作成
-                                                 UIImage* thumbnail_img = [self resizeImage:image rect:CGRectMake(0, 0, 150, 200)];
-//                                                 UIImage* thumbnail_img = [self imageByScalingAndCropping:content_img ForSize:CGSizeMake(150, 150)];
+//                                                 UIImage* thumbnail_img = [self resizeImage:image rect:CGRectMake(0, 0, 150, 200)];
+                                                 UIImage* thumbnail_img = [self imageByScalingAndCropping:image ForSize:CGSizeMake(150, 150)];
                                                  NSData *thumbnail_data = UIImageJPEGRepresentation( thumbnail_img, 0.8 );
                                                  TiBlob* thumbnail_blob = [[[TiBlob alloc] initWithData:thumbnail_data mimetype:@"image/jpeg"] autorelease];
                                                  
@@ -240,6 +259,8 @@ BOOL waitingForShutter = NO;
         captureSession.sessionPreset = AVCaptureSessionPreset1280x720;// 撮影する画像のサイズを小さくして、後のリサイズ処理を高速化
         [captureSession commitConfiguration];
         
+        [captureSession addObserver:self forKeyPath:@"running" options:NSKeyValueObservingOptionNew context:nil];
+        
         previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:captureSession];
         previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
         previewLayer.frame = self.view.bounds;
@@ -252,6 +273,8 @@ BOOL waitingForShutter = NO;
         
         // セッション開始
         [captureSession startRunning];
+    } else {
+        NSLog( @"すでに開始されています" );
     }
 }
 
@@ -261,11 +284,15 @@ BOOL waitingForShutter = NO;
         // セッション終了
         [captureSession stopRunning];
         [captureDevice removeObserver:self forKeyPath:@"adjustingFocus" context:nil];
+        [captureSession removeObserver:self forKeyPath:@"running" context:nil];
+
         AVCaptureInput* input = [captureSession.inputs objectAtIndex:0];
         [captureSession removeInput:input];
         AVCaptureVideoDataOutput* output = (AVCaptureVideoDataOutput*)[captureSession.outputs objectAtIndex:0];
         [captureSession removeOutput:output];
         started = NO;
+    } else {
+        NSLog( @"まだ開始されていません" );
     }
 }
 
