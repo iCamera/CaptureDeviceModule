@@ -241,6 +241,21 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 	public void focusAndExposureAtPoint(KrollDict options) {
 		//Log.d("CAMERA!", options.toString());
+		Camera.AutoFocusCallback focusCallback = new Camera.AutoFocusCallback(){
+			public void onAutoFocus(boolean success, Camera camera){
+				if(success){
+					Log.d(TAG, "focusCallback success!!", Log.DEBUG_MODE);
+				}else{
+					Log.d(TAG, "focusCallback faild!!", Log.DEBUG_MODE);
+				}
+				camera.cancelAutoFocus();
+				fireEvent(CaptureDeviceModule.EVENT_FOCUS_COMPLETE, new KrollDict());
+
+				if(focusAreaSupported){
+					Log.d(TAG, "RAW GET focus area: " + camera.getParameters().get("focus-areas"), Log.DEBUG_MODE);
+				}
+			}
+		};
 		if (this.focusAreaSupported || this.meteringAreaSupported) {
 			Parameters param = camera.getParameters();
 			String focusMode = param.getFocusMode();
@@ -283,21 +298,8 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			}
 
 			camera.setParameters(param);
-			Camera.AutoFocusCallback focusCallback = new Camera.AutoFocusCallback(){
-				public void onAutoFocus(boolean success, Camera camera){
-					if(success){
-						Log.d(TAG, "focusCallback success!!", Log.DEBUG_MODE);
-					}else{
-						Log.d(TAG, "focusCallback faild!!", Log.DEBUG_MODE);
-					}
-					camera.cancelAutoFocus();
-					fireEvent(CaptureDeviceModule.EVENT_FOCUS_COMPLETE, new KrollDict());
-
-					if(focusAreaSupported){
-						Log.d(TAG, "RAW GET focus area: " + camera.getParameters().get("focus-areas"), Log.DEBUG_MODE);
-					}
-				}
-			};
+			camera.autoFocus(focusCallback);
+		}else{
 			camera.autoFocus(focusCallback);
 		}
 	}
