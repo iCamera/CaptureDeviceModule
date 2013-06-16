@@ -6,10 +6,11 @@ var finder;
 var opened = false;
 var waitingForShutter = false;// シャッター連射対応用フラグ
 
-
-
-
-
+var camerizr = {
+  "manualFocus": true,
+  "manualMetering": true,
+  "flashModes": ["on", "off", "auto"]
+}
 
 function open(){
 	if( opened ){
@@ -24,6 +25,9 @@ function open(){
 		width: "240dp",
 		height: "320dp",
 	});
+	if( Alloy.Globals.isAndroid ){
+		finder.addEventListener( "cameraOpen", _onCameraOpen );
+	}
 	finder.addEventListener( "click", _onFinderClick )
 	finder.addEventListener( "focusComplete", _onFocusComplete )
 	finder.addEventListener( "shutter", _onShutter )
@@ -56,6 +60,9 @@ function close(){
 		$.irisBottom_view.animate( {height:"160dp", duration:200} );
 	}
 
+	if( Alloy.Globals.isAndroid ){
+		finder.removeEventListener( "cameraOpen", _onCameraOpen )
+	}
 	finder.removeEventListener( "click", _onFinderClick )
 	finder.removeEventListener( "focusComplete", _onFocusComplete )
 	finder.removeEventListener( "shutter", _onShutter )
@@ -101,7 +108,12 @@ function setFlashModeAuto( e ){
 	finder.setFlashModeAuto();
 }
 
-
+function _onCameraOpen( e ){
+	_.each(camerizr, function( val, key ) {
+		camerizr[key] = e[key];
+	});
+	_updateFlashButtons();
+}
 
 function _onSessionStart(){
 	if( !Alloy.Globals.isAndroid ){
@@ -110,12 +122,11 @@ function _onSessionStart(){
 	}
 }
 
-
 function _updateFlashButtons(){
 	if( finder.getHasFlash() ){
-		$.flashOn_btn.visible = true;
-		$.flashOff_btn.visible = true;
-		$.flashAuto_btn.visible = true;
+		$.flashOn_btn.visible = (camerizr.flashModes.indexOf("on") != -1 || camerizr.flashModes.indexOf("torch") != -1);
+		$.flashOff_btn.visible = (camerizr.flashModes.indexOf("off") != -1);
+		$.flashAuto_btn.visible = (camerizr.flashModes.indexOf("auto") != -1);
 	} else {
 		$.flashOn_btn.visible = false;
 		$.flashOff_btn.visible = false;
