@@ -248,9 +248,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 				}else{
 					Log.d(TAG, "focusCallback faild!!", Log.DEBUG_MODE);
 				}
-				camera.cancelAutoFocus();
 				fireEvent(CaptureDeviceModule.EVENT_FOCUS_COMPLETE, new KrollDict());
-
 				if(focusAreaSupported){
 					Log.d(TAG, "RAW GET focus area: " + camera.getParameters().get("focus-areas"), Log.DEBUG_MODE);
 				}
