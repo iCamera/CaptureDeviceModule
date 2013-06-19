@@ -60,6 +60,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	private int previewWidth;
 	private int previewHeight;
 	private OrientationEventListener orientationListener;
+	private boolean manualFocus = false;
 
 	public static FinderView finderView = null;
 
@@ -119,6 +120,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			onError(MediaModule.UNKNOWN_ERROR, "Unable to access the first back-facing camera.");
 			//finish();
 		}
+		manualFocus = false;
 	}
 
 	private void openCameraFroyo(int facing) {
@@ -245,6 +247,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			public void onAutoFocus(boolean success, Camera camera){
 				if(success){
 					Log.d(TAG, "focusCallback success!!", Log.DEBUG_MODE);
+					manualFocus = true;
 				}else{
 					Log.d(TAG, "focusCallback faild!!", Log.DEBUG_MODE);
 				}
@@ -300,6 +303,15 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		}else{
 			camera.autoFocus(focusCallback);
 		}
+	}
+
+	public boolean getFocusOnTakePhoto() {
+		Parameters param = camera.getParameters();
+		String focusMode = param.getFocusMode();
+		return (!manualFocus &&(
+			!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || 
+			  focusMode.equals(Parameters.FOCUS_MODE_FIXED) || 
+			  focusMode.equals(Parameters.FOCUS_MODE_INFINITY))));
 	}
 
 	private void initializeFocusAreas(int focusWidth, int focusHeight,
@@ -374,11 +386,6 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			//Log.d(TAG, String.format("log: %f", lng));
 
 		}
-		boolean focus = false;
-		if(options.containsKey("focus")){
-			focus = TiConvert.toBoolean(options.get("focus"));
-		}
-
 		int cameraOrientation = this.getCameraOrientation();
 		// 0: fixed to portrait
 		// currentDeviceOrientation: rotate according to the device's orientation
@@ -390,11 +397,12 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		camera.setParameters(param);
 
 		String focusMode = param.getFocusMode();
-		if (focus && (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
+		if (!manualFocus && (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
 			.equals(Parameters.FOCUS_MODE_INFINITY)))) {
 			camera.autoFocus(this);
 		} else {
 			camera.takePicture(this, null, this);
+			manualFocus = false;
 		}
 	}
 
@@ -417,6 +425,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 	public void onAutoFocus(boolean success, Camera camera) {
 		// Take the picture when the camera auto focus completes.
+		manualFocus = false;
 		camera.takePicture(this, null, this);
 	}
 

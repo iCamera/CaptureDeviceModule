@@ -56,6 +56,11 @@ public class FinderProxy extends TiViewProxy
 	}
 
 	@Kroll.method
+	public boolean getFocusOnTakePhoto() {
+		return FinderView.finderView.getFocusOnTakePhoto();
+	}
+
+	@Kroll.method
 	public void takePhoto(KrollDict options) {
 		// make sure the preview / camera are open before trying to take photo
 		if (FinderView.finderView != null) {
