@@ -401,11 +401,11 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	}
 
 	public void onResume(Activity activity) {
-        orientationListener.enable();
+		this.start();
 	}
 	
 	public void onPause(Activity activity) {
-        orientationListener.disable();
+		this.stop();
 	}
 
 	public void onDestroy(Activity activity) {
