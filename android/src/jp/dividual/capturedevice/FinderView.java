@@ -44,6 +44,8 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	private static final String TAG = "FinderView";
 	private static Camera camera;
 
+	private static int GALLERY_IMAGE_MIN_HEIGHT = 1000;
+
 	private CameraLayout cameraLayout;
 	private boolean previewRunning = false;
 	private int currentDeviceOrientation = OrientationEventListener.ORIENTATION_UNKNOWN;
@@ -505,6 +507,22 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		if (CameraLayout.optimalPreviewSize != null) {
 			param.setPreviewSize(CameraLayout.optimalPreviewSize.width, CameraLayout.optimalPreviewSize.height);
 		}
+
+		Camera.Size pictureSize = null;
+		List<Camera.Size> supportedPictureSizes = param.getSupportedPictureSizes();
+		for(Camera.Size size: supportedPictureSizes){
+			if(pictureSize != null){
+				if(size.height < pictureSize.height && size.height >= GALLERY_IMAGE_MIN_HEIGHT){
+					pictureSize = size;
+				}
+			}else{
+				pictureSize = size;
+			}
+		}
+		if(pictureSize != null){
+			param.setPictureSize(pictureSize.width, pictureSize.height);
+		}
+		
 		camera.setParameters(param);
 	}
 
