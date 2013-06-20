@@ -201,7 +201,7 @@ public class CaptureDeviceModule extends KrollModule
 		return dest;
 	}
 
-	public static KrollDict createDictForImage(TiBlob imageData, final Number rotationDegrees) {
+	public static KrollDict createDictForImage(TiBlob imageData) {
 		KrollDict d = new KrollDict();
 		d.putCodeAndMessage(MediaModule.NO_ERROR, null);
 		d.put(EVENT_PROPERTY_ORIGINAL, imageData);
@@ -213,7 +213,8 @@ public class CaptureDeviceModule extends KrollModule
 			Log.d(TAG, "createDictForImage: saved original to file", Log.DEBUG_MODE);
 
 			ExifInterface originalExif = new ExifInterface(originalFile.getAbsolutePath());
-			int exifOrientation = originalExif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+			final int exifOrientation = originalExif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+			Log.d(TAG, String.format("exifOrientation: %d", exifOrientation));
 			boolean hasOrientation = ExifInterface.ORIENTATION_UNDEFINED != exifOrientation;
 			if (!hasOrientation) {
 				Log.d(TAG, "createDictForImage: NO orientation", Log.DEBUG_MODE);
@@ -233,30 +234,68 @@ public class CaptureDeviceModule extends KrollModule
 						// Create transform matrix
 						Matrix matrix = new Matrix();
 						// Don't rotate on our own: already rotated by the hardware according to Camera.setRotation
-						//matrix.postRotate(rotationDegrees.intValue());
+			            switch (exifOrientation) {
+				            case 2:
+				                matrix.setScale(-1, 1);
+				                break;
+				            case 3:
+				                matrix.setRotate(180);
+				                break;
+				            case 4:
+				                matrix.setRotate(180);
+				                matrix.postScale(-1, 1);
+				                break;
+				            case 5:
+				                matrix.setRotate(90);
+				                matrix.postScale(-1, 1);
+				                break;
+				            case 6:
+				                matrix.setRotate(90);
+				                break;
+				            case 7:
+				                matrix.setRotate(-90);
+				                matrix.postScale(-1, 1);
+				                break;
+				            case 8:
+				                matrix.setRotate(-90);
+				                break;
+				            default:
+				            	break;
+			            }
 						return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
 					}
 				});
 
 			List<TagInfo> excludedFields = new ArrayList<TagInfo>();
 			// Don't exclude orientation info: it's set by the hardware according to Camera.setRotation
-			//			excludedFields.add(TiffTagConstants.TIFF_TAG_ORIENTATION);
+			excludedFields.add(TiffTagConstants.TIFF_TAG_ORIENTATION);
 
 			CaptureDeviceModule.copyExifData(originalFile, preprocessedFile, excludedFields);
-			Log.d(TAG, "createDictForImage: proprocessed and copied exif (rotation:" + rotationDegrees.toString() + ")", Log.DEBUG_MODE);
 
 			TiBlob sourceBlob = CaptureDeviceModule.imageBlobFromFile(preprocessedFile);
 			int width = sourceBlob.getWidth();
 			int height = sourceBlob.getHeight();
-			float contentHeight = height * PHOTO_WIDTH_CONTENT / width;
-			float thumbnailHeight = height * PHOTO_WIDTH_THUMBNAIL / width;
-
+			float contentWidth;
+			float contentHeight;
+			float thumbnailWidth;
+			float thumbnailHeight;
+			if(width < height){
+				contentWidth = PHOTO_WIDTH_CONTENT;
+				contentHeight = height * PHOTO_WIDTH_CONTENT / width;
+				thumbnailWidth = PHOTO_WIDTH_THUMBNAIL;
+				thumbnailHeight = height * PHOTO_WIDTH_THUMBNAIL / width;
+			}else{
+				contentWidth = width * PHOTO_WIDTH_CONTENT / height;
+				contentHeight = PHOTO_WIDTH_CONTENT;
+				thumbnailWidth = width * PHOTO_WIDTH_THUMBNAIL / height;
+				thumbnailHeight = PHOTO_WIDTH_THUMBNAIL;
+			}
 			d.put(EVENT_PROPERTY_CONTENT,
-				  CaptureDeviceModule.resizeAndCopyExifData(preprocessedFile, PHOTO_WIDTH_CONTENT, contentHeight, excludedFields));
+				  CaptureDeviceModule.resizeAndCopyExifData(preprocessedFile, contentWidth, contentHeight, excludedFields));
 			Log.d(TAG, "createDictForImage: resized for content", Log.DEBUG_MODE);
 
 			d.put(EVENT_PROPERTY_THUMBNAIL,
-				  CaptureDeviceModule.resizeAndCopyExifData(preprocessedFile, PHOTO_WIDTH_THUMBNAIL, thumbnailHeight, excludedFields));
+				  CaptureDeviceModule.resizeAndCopyExifData(preprocessedFile, thumbnailWidth, thumbnailHeight, excludedFields));
 			Log.d(TAG, "createDictForImage: resized for thumbnail", Log.DEBUG_MODE);
 		} catch (IOException e) {
 			d.putCodeAndMessage(MediaModule.UNKNOWN_ERROR, e.toString());

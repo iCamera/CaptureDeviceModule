@@ -444,11 +444,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		}
 
 		TiBlob imageData = TiBlob.blobFromData(data);
-		int rotateDegrees = getCameraDisplayOrientation(true);
-		if (isFacingFront()) {
-			rotateDegrees = (rotateDegrees + 180) % 360;
-		}
-		KrollDict dict = CaptureDeviceModule.createDictForImage(imageData, rotateDegrees);
+		KrollDict dict = CaptureDeviceModule.createDictForImage(imageData);
 		fireEvent(CaptureDeviceModule.EVENT_IMAGE_PROCESSED, dict);
 	}
 
