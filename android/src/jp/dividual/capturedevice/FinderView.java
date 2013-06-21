@@ -239,9 +239,8 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 				@Override
 				public void run() {
 					openCamera(facing);
-					CameraLayout layout = (CameraLayout) getNativeView();
-					layout.updateOptimalPreviewSize();
 					updateCameraParameters();
+					CameraLayout layout = (CameraLayout) getNativeView();
 					resumePreview(layout.getSurfaceHolder());
 				}
 			});
@@ -414,6 +413,9 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 	public void onResume(Activity activity) {
 		this.start();
+		updateCameraParameters();
+		CameraLayout layout = (CameraLayout) getNativeView();
+		resumePreview(layout.getSurfaceHolder());
 	}
 	
 	public void onPause(Activity activity) {
@@ -489,8 +491,8 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		if (currentUIRotation == rotation && previewRunning) {
 			return;
 		}
-		this.pausePreview(previewHolder);
 		currentUIRotation = rotation;
+		this.pausePreview(previewHolder);
 		this.updateCameraParameters();
 		this.resumePreview(previewHolder);
 	}
@@ -512,11 +514,18 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 			param.setFocusMode(Parameters.FOCUS_MODE_MACRO);
 		}
 
+		// Update preview size
+		if (CameraLayout.optimalPreviewSize == null) {
+			CameraLayout layout = (CameraLayout) getNativeView();
+			layout.updateOptimalPreviewSize();
+		}
+		// Set preview size
 		if (CameraLayout.optimalPreviewSize != null) {
 			param.setPreviewSize(CameraLayout.optimalPreviewSize.width, CameraLayout.optimalPreviewSize.height);
 			//Log.d(TAG, String.format("setPreviewSize w: %d h: %d", CameraLayout.optimalPreviewSize.width, CameraLayout.optimalPreviewSize.height), Log.DEBUG_MODE);
 		}
 
+		// Set picture size
 		Camera.Size pictureSize = null;
 		List<Camera.Size> supportedPictureSizes = param.getSupportedPictureSizes();
 		for(Camera.Size size: supportedPictureSizes){
@@ -600,6 +609,8 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		fireEvent(CaptureDeviceModule.EVENT_ERROR, dict);
 	}
 
+	// secretly stops camera preview (previewRunning is true even
+	// after calling pausePreview())
 	private void pausePreview(SurfaceHolder previewHolder) {
 		if (previewRunning) {
 			try {
