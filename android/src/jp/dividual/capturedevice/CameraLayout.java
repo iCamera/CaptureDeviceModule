@@ -42,7 +42,7 @@ public class CameraLayout extends TiCompositeLayout {
 			int previewHeight = MeasureSpec.getSize(heightMeasureSpec);
 
 			// Set the preview size to the most optimal given the target size
-			optimalPreviewSize = getOptimalPreviewSize(supportedPreviewSizes, previewWidth, previewHeight);
+			updateOptimalPreviewSize(previewWidth, previewHeight);
 			if (optimalPreviewSize != null) {
 				if (previewWidth > previewHeight) {
 					aspectRatio = (double) optimalPreviewSize.width / optimalPreviewSize.height;
@@ -94,12 +94,20 @@ public class CameraLayout extends TiCompositeLayout {
 		return preview.getHolder();
 	}
 
+	protected void updateOptimalPreviewSize() {
+		updateOptimalPreviewSize(previewLayout.getWidth(), previewLayout.getHeight());
+	}
+
+	protected static void updateOptimalPreviewSize(int w, int h) {
+		optimalPreviewSize = getOptimalPreviewSize(supportedPreviewSizes, w, h);
+	}
+
 	/**
 	 * Computes the optimal preview size given the target display size and aspect ratio.
 	 * 
 	 * @param supportPreviewSizes
 	 *            a list of preview sizes the camera supports
-	 * @param targetSize
+	 * @param w, h
 	 *            the target display size that will render the preview
 	 * @return the optimal size of the preview
 	 */

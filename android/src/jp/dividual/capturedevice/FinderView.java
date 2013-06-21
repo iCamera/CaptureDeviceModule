@@ -26,6 +26,7 @@ import android.content.res.Configuration;
 import android.hardware.Camera;
 import android.hardware.Camera.Area;
 import android.hardware.Camera.AutoFocusCallback;
+import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Parameters;
 import android.os.Build;
 
@@ -39,7 +40,7 @@ import android.view.SurfaceHolder;
 import android.view.View;
 
 
-public class FinderView extends TiUIView implements SurfaceHolder.Callback, Camera.PictureCallback, Camera.ShutterCallback, Camera.AutoFocusCallback, TiLifecycle.OnLifecycleEvent {
+public class FinderView extends TiUIView implements SurfaceHolder.Callback, Camera.PictureCallback, Camera.ShutterCallback, Camera.AutoFocusCallback, Camera.PreviewCallback, TiLifecycle.OnLifecycleEvent {
 
 	private static final String TAG = "FinderView";
 	private static Camera camera;
@@ -174,6 +175,8 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 	}
 
 	private void initializeAfterCameraOpen() {
+		// for debugging:
+		//camera.setPreviewCallback(this);
 		this.broadcastCapabilities();
 		this.setMatrix();
 	}
@@ -237,6 +240,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 				public void run() {
 					openCamera(facing);
 					CameraLayout layout = (CameraLayout) getNativeView();
+					layout.updateOptimalPreviewSize();
 					updateCameraParameters();
 					resumePreview(layout.getSurfaceHolder());
 				}
@@ -431,6 +435,14 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		camera.takePicture(this, null, this);
 	}
 
+	public void onPreviewFrame (byte[] data, Camera camera) {
+		/*
+		Camera.Parameters   param = camera.getParameters();
+		Camera.Size size = param.getPreviewSize();
+		Log.d(TAG, String.format("onPreviewFrame w: %d, h: %d", size.width, size.height), Log.DEBUG_MODE);
+		*/
+	}
+
 	public void onShutter() {
 		fireEvent(CaptureDeviceModule.EVENT_SHUTTER, new KrollDict());
 	}
@@ -502,6 +514,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 
 		if (CameraLayout.optimalPreviewSize != null) {
 			param.setPreviewSize(CameraLayout.optimalPreviewSize.width, CameraLayout.optimalPreviewSize.height);
+			//Log.d(TAG, String.format("setPreviewSize w: %d h: %d", CameraLayout.optimalPreviewSize.width, CameraLayout.optimalPreviewSize.height), Log.DEBUG_MODE);
 		}
 
 		Camera.Size pictureSize = null;
