@@ -310,9 +310,13 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		}
 	}
 
-	public boolean getFocusOnTakePhoto() {
+	public boolean shouldAutoFocusOnShutter() {
 		Parameters param = camera.getParameters();
 		String focusMode = param.getFocusMode();
+		return shouldAutoFocusOnShutter(focusMode);
+	}
+
+	public boolean shouldAutoFocusOnShutter(String focusMode) {
 		return (!manualFocus &&(
 			!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || 
 			  focusMode.equals(Parameters.FOCUS_MODE_FIXED) || 
@@ -402,8 +406,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		camera.setParameters(param);
 
 		String focusMode = param.getFocusMode();
-		if (!manualFocus && (!(focusMode.equals(Parameters.FOCUS_MODE_EDOF) || focusMode.equals(Parameters.FOCUS_MODE_FIXED) || focusMode
-			.equals(Parameters.FOCUS_MODE_INFINITY)))) {
+		if (shouldAutoFocusOnShutter(focusMode)) {
 			camera.autoFocus(this);
 		} else {
 			camera.takePicture(this, null, this);

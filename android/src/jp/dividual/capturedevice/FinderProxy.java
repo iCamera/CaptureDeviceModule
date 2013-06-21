@@ -56,8 +56,8 @@ public class FinderProxy extends TiViewProxy
 	}
 
 	@Kroll.method
-	public boolean getFocusOnTakePhoto() {
-		return FinderView.finderView.getFocusOnTakePhoto();
+	public boolean shouldAutoFocusOnShutter() {
+		return FinderView.finderView.shouldAutoFocusOnShutter();
 	}
 
 	@Kroll.method
