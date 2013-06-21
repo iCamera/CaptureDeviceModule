@@ -518,7 +518,7 @@ public class FinderView extends TiUIView implements SurfaceHolder.Callback, Came
 		if(pictureSize != null){
 			param.setPictureSize(pictureSize.width, pictureSize.height);
 		}
-		
+
 		camera.setParameters(param);
 	}
 

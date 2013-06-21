@@ -105,6 +105,12 @@ public class CameraLayout extends TiCompositeLayout {
 	 */
 	private static Size getOptimalPreviewSize(List<Size> sizes, int w, int h)
 	{
+		if(sizes.get(0).width > sizes.get(0).height){
+			int temp = w;
+			w = h;
+			h = temp;
+		}
+
 		final double ASPECT_TOLERANCE = 0.01;
 		double targetRatio = (double) w / h;
 		if (sizes == null) {
@@ -129,7 +135,7 @@ public class CameraLayout extends TiCompositeLayout {
 
 		// Cannot find the one match the aspect ratio, ignore the requirement
 		if (optimalSize == null) {
-			Log.w(TAG, "No preview size found that matches the aspect ratio.", Log.DEBUG_MODE);
+			//Log.w(TAG, "No preview size found that matches the aspect ratio.", Log.DEBUG_MODE);
 			minDiff = Double.MAX_VALUE;
 			for (Size size : sizes) {
 				if (Math.abs(size.height - targetHeight) < minDiff) {
@@ -138,6 +144,7 @@ public class CameraLayout extends TiCompositeLayout {
 				}
 			}
 		}
+		//Log.w("SURFACE!", String.format("%d / %d minDiff:%f", optimalSize.width, optimalSize.height, minDiff));
 		return optimalSize;
 	}
 
