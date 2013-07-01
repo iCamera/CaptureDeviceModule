@@ -255,8 +255,9 @@ BOOL waitingForShutter = NO;
         captureSession = [[[AVCaptureSession alloc] init] autorelease];
         [captureSession beginConfiguration];
         [captureSession addInput:videoInput];
-//        captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
-        captureSession.sessionPreset = AVCaptureSessionPreset1280x720;// 撮影する画像のサイズを小さくして、後のリサイズ処理を高速化
+        captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
+        //captureSession.sessionPreset = AVCaptureSessionPreset1920x1080;
+        //captureSession.sessionPreset = AVCaptureSessionPreset1280x720;// 撮影する画像のサイズを小さくして、後のリサイズ処理を高速化
         [captureSession commitConfiguration];
         
         [captureSession addObserver:self forKeyPath:@"running" options:NSKeyValueObservingOptionNew context:nil];

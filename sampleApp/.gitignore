@@ -1,3 +1,4 @@
+plugins/ti.alloy/hooks/alloy.js
 .DS_Store
 build.log
 build
