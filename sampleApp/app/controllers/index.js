@@ -82,7 +82,7 @@ function shutter(){
 	}
 	trace( "シャッターを切ります" );
 	var saveDevice = false;
-	if($.saveDevice_switch.value != null){
+	if( $.saveDevice_switch.value != null ){
 		saveDevice = $.saveDevice_switch.value;
 	}
 	finder.takePhoto( {saveToDevice:saveDevice, lat:35.6650, lng:139.7587} )
@@ -152,6 +152,10 @@ function _onShutter(e){
 
 }
 function _onImageProcessed(e){
+	trace( "_onImageProcessed" )
+	trace( "e.content.length = "+ Math.floor(e.content.length/1000) +"KB" )
+	trace( "e.thumbnail.length = "+ e.thumbnail.length +"Bytes" )
+
 	// 画像ファイルを一時的に保存
 	var image = e.thumbnail;
 	var newFile = Ti.Filesystem.getFile( Ti.Filesystem.tempDirectory, guid()+'.jpg' );
