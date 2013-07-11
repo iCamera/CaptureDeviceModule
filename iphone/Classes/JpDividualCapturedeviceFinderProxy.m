@@ -200,14 +200,17 @@ BOOL waitingForShutter = NO;
                                                  UIImage *image = [UIImage imageWithData:data];
                                                  
                                                  // フロントカメラならフリップ
+                                                 TiBlob* original_blob;
                                                  if( frontCameraMode ){
                                                      NSLog( @"フリップします" );
-                                                     image = [UIImage imageWithCGImage:image.CGImage scale:1.0 orientation: UIImageOrientationLeftMirrored];
+//                                                     image = [UIImage imageWithCGImage:image.CGImage scale:1.0 orientation: UIImageOrientationLeftMirrored];
+                                                     NSData* content_data = UIImageJPEGRepresentation( image, 0.8 );
+                                                     original_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
+                                                 } else {
+                                                     original_blob = [[[TiBlob alloc] initWithData:data mimetype:@"image/jpeg"] autorelease];
+
                                                  }
-                                                 
-                                                 // オリジナルのblobを作成
-                                                 TiBlob* original_blob = [[[TiBlob alloc] initWithData:data mimetype:@"image/jpeg"] autorelease];
-                                                 
+                                                                                                 
                                                  // 送信用データ(縦852pxサイズ)を作成
 //                                                 UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 640, 852)];// 重い
 //                                                 NSData* content_data = UIImageJPEGRepresentation( content_img, 0.8 );
