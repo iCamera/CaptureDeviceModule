@@ -44,7 +44,7 @@ function open(){
 		$.changeToBackCamera_btn.visible = true;
 	}
 
-	finder.start();
+	finder.start({preset:"720p"});
 	$.camera_view.add( finder )
 	opened = true;
 }
