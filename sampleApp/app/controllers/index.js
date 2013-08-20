@@ -1,7 +1,7 @@
 "use strict"
 
 
-
+var Cloud = require( "ti.cloud" )
 var finder;
 var opened = false;
 var waitingForShutter = false;// シャッター連射対応用フラグ
@@ -174,6 +174,23 @@ function _onImageProcessed(e){
 	Alloy.Collections.Entries.add( entry );// add new model to the global collection
 	entry.save();// save the model to persistent storage
 
+
+	
+	Cloud.Photos.create({
+	    photo: e.content
+	}, function (e) {
+	    if (e.success) {
+	        var photo = e.photos[0];
+	        alert('Success:\n' +
+	            'id: ' + photo.id + '\n' +
+	            'filename: ' + photo.filename + '\n' +
+	            'size: ' + photo.size,
+	            'updated_at: ' + photo.updated_at);
+	    } else {
+	        alert('Error:\n' +
+	            ((e.error && e.message) || JSON.stringify(e)));
+	    }
+	});
 }
 
 
