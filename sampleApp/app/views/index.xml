@@ -30,9 +30,9 @@
 		</View>
 
 
-		<Button top="0" left="0" title="open" onClick="open" />
+		<Button top="20" left="0" title="open" onClick="open" />
 		<Switch id="saveDevice_switch" top="0" title="本体保存" />
-		<Button top="0" right="0" title="close" onClick="close" />
+		<Button top="20" right="0" title="close" onClick="close" />
 
 
 	</Window>
