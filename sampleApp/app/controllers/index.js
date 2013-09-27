@@ -12,7 +12,7 @@ var TiCamera = require('be.k0suke.ticamera');
 
 var cameraView = TiCamera.createView({
 	width: 320,
-	height: 480,
+	height: 548,
 	backgroundColor: '#000',
 	videoQuality: TiCamera.QUALITY_MEDIUM,
 	cameraPosition: TiCamera.hasBackCamera() ? TiCamera.CAMERA_BACK : TiCamera.CAMERA_FRONT,
