@@ -36,6 +36,7 @@
 		24DD6CFA1134B3F500162E58 /* BeK0sukeTicameraModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 24DD6CF81134B3F500162E58 /* BeK0sukeTicameraModule.m */; };
 		24DE9E1111C5FE74003F90F6 /* BeK0sukeTicameraModuleAssets.h in Headers */ = {isa = PBXBuildFile; fileRef = 24DE9E0F11C5FE74003F90F6 /* BeK0sukeTicameraModuleAssets.h */; };
 		24DE9E1211C5FE74003F90F6 /* BeK0sukeTicameraModuleAssets.m in Sources */ = {isa = PBXBuildFile; fileRef = 24DE9E1011C5FE74003F90F6 /* BeK0sukeTicameraModuleAssets.m */; };
+		4D491FC617F589F500E57453 /* AssetsLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D491FC517F589F500E57453 /* AssetsLibrary.framework */; };
 		AA747D9F0F9514B9006C5449 /* BeK0sukeTicamera_Prefix.pch in Headers */ = {isa = PBXBuildFile; fileRef = AA747D9E0F9514B9006C5449 /* BeK0sukeTicamera_Prefix.pch */; };
 		AACBBE4A0F95108600F1A2B1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AACBBE490F95108600F1A2B1 /* Foundation.framework */; };
 /* End PBXBuildFile section */
@@ -82,6 +83,7 @@
 		24DD6D1B1134B66800162E58 /* titanium.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = titanium.xcconfig; sourceTree = "<group>"; };
 		24DE9E0F11C5FE74003F90F6 /* BeK0sukeTicameraModuleAssets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BeK0sukeTicameraModuleAssets.h; path = Classes/BeK0sukeTicameraModuleAssets.h; sourceTree = "<group>"; };
 		24DE9E1011C5FE74003F90F6 /* BeK0sukeTicameraModuleAssets.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BeK0sukeTicameraModuleAssets.m; path = Classes/BeK0sukeTicameraModuleAssets.m; sourceTree = "<group>"; };
+		4D491FC517F589F500E57453 /* AssetsLibrary.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AssetsLibrary.framework; path = System/Library/Frameworks/AssetsLibrary.framework; sourceTree = SDKROOT; };
 		AA747D9E0F9514B9006C5449 /* BeK0sukeTicamera_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BeK0sukeTicamera_Prefix.pch; sourceTree = SOURCE_ROOT; };
 		AACBBE490F95108600F1A2B1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		D2AAC07E0554694100DB518D /* libBeK0sukeTicamera.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libBeK0sukeTicamera.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -92,6 +94,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4D491FC617F589F500E57453 /* AssetsLibrary.framework in Frameworks */,
 				23581E0E177DCEA500BAA444 /* QuartzCore.framework in Frameworks */,
 				23581E0C177DCE9B00BAA444 /* OpenGLES.framework in Frameworks */,
 				234D357117717B4E0030BCEB /* AVFoundation.framework in Frameworks */,
@@ -128,6 +131,7 @@
 		0867D69AFE84028FC02AAC07 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				4D491FC517F589F500E57453 /* AssetsLibrary.framework */,
 				23581E01177DCDB000BAA444 /* GPUImage.xcodeproj */,
 				23581E0D177DCEA500BAA444 /* QuartzCore.framework */,
 				23581E0B177DCE9B00BAA444 /* OpenGLES.framework */,
