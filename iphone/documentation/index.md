@@ -1,16 +1,16 @@
-# CaptureDeviceModule Module
+# TiCameraView Module
 
 ## Description
 
 TODO: Enter your module description here
 
-## Accessing the CaptureDeviceModule Module
+## Accessing the TiCameraView Module
 
 To access this module from JavaScript, you would do the following:
 
-	var CaptureDeviceModule = require("jp.dividual.capturedevice");
+	var TiCameraView = require("be.k0suke.ticamera");
 
-The CaptureDeviceModule variable is a reference to the Module object.	
+The TiCameraView variable is a reference to the Module object.	
 
 ## Reference
 

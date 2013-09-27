@@ -51,7 +51,7 @@
     </mobileweb>
     <modules>
         <module platform="android" version="1.0">jp.dividual.capturedevice</module>
-        <module platform="iphone" version="1.0">jp.dividual.capturedevice</module>
+        <module platform="iphone">be.k0suke.ticamera</module>
         <module platform="commonjs">ti.cloud</module>
     </modules>
     <deployment-targets>

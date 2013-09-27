@@ -67,7 +67,7 @@ def generate_doc(config):
 	return documentation
 
 def compile_js(manifest,config):
-	js_file = os.path.join(cwd,'assets','jp.dividual.capturedevice.js')
+	js_file = os.path.join(cwd,'assets','be.k0suke.ticamera.js')
 	if not os.path.exists(js_file): return
 
 	from compiler import Compiler
@@ -97,7 +97,7 @@ def compile_js(manifest,config):
 
 	from tools import splice_code
 
-	assets_router = os.path.join(cwd,'Classes','JpDividualCapturedeviceModuleAssets.m')
+	assets_router = os.path.join(cwd,'Classes','BeK0sukeTicameraModuleAssets.m')
 	splice_code(assets_router, 'asset', root_asset_content)
 	splice_code(assets_router, 'resolve_asset', module_asset_content)
 
@@ -213,10 +213,8 @@ if __name__ == '__main__':
 	config = read_ti_xcconfig()
 
 	sdk = find_sdk(config)
-	print sdk
 	sys.path.insert(0,os.path.join(sdk,'iphone'))
 	sys.path.append(os.path.join(sdk, "common"))
-
 
 	compile_js(manifest,config)
 	build_module(manifest,config)

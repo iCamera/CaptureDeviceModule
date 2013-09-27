@@ -1,431 +1,181 @@
-"use strict"
+// This is a test harness for your module
+// You should do something interesting in this harness
+// to test out the module and to provide instructions
+// to users on how to use it by example.
 
+$.win.open()
 
-var Cloud = require( "ti.cloud" )
-var finder;
-var opened = false;
-var waitingForShutter = false;// シャッター連射対応用フラグ
+// TODO: write your module tests here
+var TiCamera = require('be.k0suke.ticamera');
 
-var camerizr = {
-  "manualFocus": true,
-  "manualMetering": true,
-  "flashModes": ["on", "off", "auto"]
-}
+var cameraView = TiCamera.createView({
+	width: 320,
+	height: 480,
+	backgroundColor: '#000',
+	videoQuality: TiCamera.QUALITY_MEDIUM,
+	cameraPosition: TiCamera.hasBackCamera() ? TiCamera.CAMERA_BACK : TiCamera.CAMERA_FRONT,
+	frameDuration: 16
+});
+$.win.add(cameraView);
 
-function open(){
-	if( opened ){
-		Ti.API.info( "すでに開始しています" )
-		return;
-	}
-	var testmodule = require('jp.dividual.capturedevice');
-	finder = testmodule.createFinder({
-		color:"white",
-		left: 0,
-		bottom: 0,
-		width: "240dp",
-		height: "320dp",
-	});
-	if( Alloy.Globals.isAndroid ){
-		finder.addEventListener( "cameraOpen", _onCameraOpen );
-	}
-	finder.addEventListener( "click", _onFinderClick )
-	finder.addEventListener( "focusComplete", _onFocusComplete )
-	finder.addEventListener( "shutter", _onShutter )
-	finder.addEventListener( "imageProcessed", _onImageProcessed )
-	finder.addEventListener( "sessionStart", _onSessionStart )
+var camera = Ti.UI.createButton({
+	top: 64,
+	left: 10,
+	width: Ti.UI.SIZE,
+	height: 44,
+	title: 'toggle camera'
+});
+$.win.add(camera);
 
-	var devices = finder.getDevices()
-	if( devices.length == 0 ){
-		return;
-	}
+camera.addEventListener('click', function(){
+	cameraView.toggleCamera();
+});
 
-	if( devices.length == 2 ){
-		$.changeToFrontCamera_btn.visible = true;
-		$.changeToBackCamera_btn.visible = true;
-	}
+var torch = Ti.UI.createButton({
+	top: 64,
+	right: 10,
+	width: Ti.UI.SIZE,
+	height: 44,
+	title: 'toggle torch'
+});
+$.win.add(torch);
 
-	finder.start({preset:"720p"});
-	$.camera_view.add( finder )
-	opened = true;
-}
-
-function close(){
-	if( opened==false ){
-		Ti.API.info( "すでに停止しています" )
-		return;
-	}
-
-	if( !Alloy.Globals.isAndroid ){
-		$.irisTop_view.animate( {height:"160dp", duration:200} );
-		$.irisBottom_view.animate( {height:"160dp", duration:200} );
-	}
-
-	if( Alloy.Globals.isAndroid ){
-		finder.removeEventListener( "cameraOpen", _onCameraOpen )
-	}
-	finder.removeEventListener( "click", _onFinderClick )
-	finder.removeEventListener( "focusComplete", _onFocusComplete )
-	finder.removeEventListener( "shutter", _onShutter )
-	finder.removeEventListener( "imageProcessed", _onImageProcessed )
-	finder.removeEventListener( "sessionStart", _onSessionStart )
-
-	$.camera_view.remove( finder )
-	finder.stop();
-	opened = false;
-}
-
-
-function shutter(){
-	if( waitingForShutter ){
-		trace( "シャッターが切れるのを待っています" );
-		return;
-	}
-	trace( "シャッターを切ります" );
-	var saveDevice = false;
-	if( $.saveDevice_switch.value != null ){
-		saveDevice = $.saveDevice_switch.value;
-	}
-	finder.takePhoto( {saveToDevice:saveDevice, lat:35.6650, lng:139.7587} )
-	waitingForShutter = true;
-}
-
-function changeToFrontCamera(){
-	finder.changeToFrontCamera();
-	_updateFlashButtons();
-}
-function changeToBackCamera(){
-	finder.changeToBackCamera();
-	_updateFlashButtons();
-}
-
-function setFlashModeOn(){
-	finder.setFlashModeOn();
-}
-function setFlashModeOff(){
-	finder.setFlashModeOff();
-}
-function setFlashModeAuto( e ){
-	finder.setFlashModeAuto();
-}
-
-function _onCameraOpen( e ){
-	_.each(camerizr, function( val, key ) {
-		camerizr[key] = e[key];
-	});
-	_updateFlashButtons();
-}
-
-function _onSessionStart(){
-	if( !Alloy.Globals.isAndroid ){
-		$.irisTop_view.animate( {height:"10dp", duration:200} );
-		$.irisBottom_view.animate( {height:"10dp", duration:200} );
-	}
-}
-
-function _updateFlashButtons(){
-	if( finder.getHasFlash() ){
-		$.flashOn_btn.visible = (camerizr.flashModes.indexOf("on") != -1 || camerizr.flashModes.indexOf("torch") != -1);
-		$.flashOff_btn.visible = (camerizr.flashModes.indexOf("off") != -1);
-		$.flashAuto_btn.visible = (camerizr.flashModes.indexOf("auto") != -1);
+torch.addEventListener('click', function(){
+	if (cameraView.isBackCamera()) {
+		cameraView.toggleTorch();
 	} else {
-		$.flashOn_btn.visible = false;
-		$.flashOff_btn.visible = false;
-		$.flashAuto_btn.visible = false;
+		alert('Do not use toggleTorch method, in front camera mode');
 	}
-}
-
-
-
-function _onFinderClick(e){
-	var horizontal = 1 - ( e.x / e.source.size.width )
-	var vertical = ( e.y / e.source.size.height )
-	console.log( horizontal +", "+ vertical );
-	finder.focusAndExposureAtPoint( {x:vertical, y:horizontal} );
-}
-function _onFocusComplete(){
-	console.log( "フォーカス完了!" );
-}
-function _onShutter(e){
-	waitingForShutter = false;
-	// finder.opacity = 0;
-	// finder.animate( {opacity:1, duration:200} )
-
-}
-function _onImageProcessed(e){
-	trace( "_onImageProcessed" )
-	trace( "e.content.length = "+ Math.floor(e.content.length/1000) +"KB" )
-	trace( "e.thumbnail.length = "+ e.thumbnail.length +"Bytes" )
-
-	// 画像ファイルを一時的に保存
-	var image = e.thumbnail;
-	var newFile = Ti.Filesystem.getFile( Ti.Filesystem.tempDirectory, guid()+'.jpg' );
-	if( !Alloy.Globals.isAndroid ){
-		newFile.createFile();
-	}
-	newFile.write( image );
-	trace( String(newFile.size) )
-	trace( newFile.nativePath )
-
-	var entry = Alloy.createModel('Entry', {
-		title: "hoge",
-		imagePath: newFile.nativePath,
-	    created_at : new Date()
-	});
-	Alloy.Collections.Entries.add( entry );// add new model to the global collection
-	entry.save();// save the model to persistent storage
-
-
-	
-	Cloud.Photos.create({
-	    photo: e.content
-	}, function (e) {
-	    if (e.success) {
-	        var photo = e.photos[0];
-	        alert('Success:\n' +
-	            'id: ' + photo.id + '\n' +
-	            'filename: ' + photo.filename + '\n' +
-	            'size: ' + photo.size,
-	            'updated_at: ' + photo.updated_at);
-	    } else {
-	        alert('Error:\n' +
-	            ((e.error && e.message) || JSON.stringify(e)));
-	    }
-	});
-}
-
-
-
-
-
-
-
-
-
-
-
-// var irisImages = []
-// for( var i=1; i<10; i++ ){
-// 	irisImages.push( "/images/iris/irisOpenAnime000"+ i +".png" );
-// }
-// // irisImages = ["/images/cat.jpg", "/images/cat300.jpg", "/images/cat240320.jpg"]
-// trace( irisImages )
-// // $.iris_iv.duration = 30
-// $.iris_iv.images = irisImages;
-// $.iris_iv.start();
-
-
-
-function createThumbViewTemplate( objectId ){
-	return {
-		type: 'Ti.UI.ImageView', // Use an image view for the image
-		bindId: 'pic'+ objectId,           // Maps to a custom pic property of the item data
-		properties: {            // Sets the image view  properties
-		    width: '75dp',
-		    height: '75dp',
-		    top:"4dp",
-		    left: "4dp",
-		},
-	}
-}
-var myTemplate = {
-	properties: {
-	    height: '79dp',
-	},
-    childTemplates: [
-    	{
-    		type: 'Ti.UI.View',
-    		properties: {
-    			layout: "horizontal",
-    		},
-    		childTemplates: [
-	    		createThumbViewTemplate( 1 ),
-	    		createThumbViewTemplate( 2 ),
-	    		createThumbViewTemplate( 3 ),
-	    		createThumbViewTemplate( 4 ),
-    		],
-    	}
-    ]
-};
-if( !Alloy.Globals.isAndroid ){
-	myTemplate.properties.selectionStyle = Titanium.UI.iPhone.ListViewCellSelectionStyle.NONE;
-}
-
-$.listView = Ti.UI.createListView({
-	templates: { 'temple': myTemplate },
-    defaultItemTemplate: 'temple'
-});
-var rootSection = Ti.UI.createListSection();
-$.listView.setSections( [rootSection] );
-$.listViewContainer.add($.listView);
-
-$.listView.addEventListener('itemclick', function(e){
-	dump(e)
-    // var item = section.getItemAt(e.itemIndex);
 });
 
+var recording = Ti.UI.createButton({
+	top: 10,
+	right: 10,
+	width: Ti.UI.SIZE,
+	height: 44,
+	title: 'recording'
+});
+$.win.add(recording);
 
+var isRecording = false;
+recording.addEventListener('click', function(){
+	if (isRecording) {
+		cameraView.stopRecording({
+			saveToPhotoGallery: save.getValue(),	// default false
+			recordingSound: shutter.getValue(),		// default true
+			success: function(e){
+				var player = Ti.Media.createVideoPlayer({
+					media: e.media,
+					autoplay: true,
+					mediaControlStyle: Ti.Media.VIDEO_CONTROL_FULLSCREEN,
+					scalingMode: Ti.Media.VIDEO_SCALING_ASPECT_FIT
+				});
+				$.win.add(player);
 
-Alloy.Collections.Entries.on( "add", function( model, collenction ){
-	trace("add")
-	if( !rootSection.items || rootSection.items.length==0 ){
-		updateListItems()
-		return;
-	}
-	trace( rootSection.items[(rootSection.items.length-1)].thumbCount )
-	if( rootSection.items[(rootSection.items.length-1)].thumbCount==4 ){
-		// 行が追加されるタイミングに section.setItems すると画面が乱れるので、素直に appendItems する
-		trace( "行を追加します" )
-		dump(model)
-		var data = [];
-		var listItem = {
-			thumbCount: 1,
-			pic1: {
-				image: model.get("imagePath"),
-				visible: true,
+				player.addEventListener('complete', function(){
+					$.win.remove(player);
+				});
 			},
-			pic2: {visible: false},
-			pic3: {visible: false},
-			pic4: {visible: false},
-		}
-		data.push( listItem );
-		rootSection.appendItems( data, {animated:false} )
+			error: function(e){
+				console.log(e);
+			}
+		});
+		recording.setTitle('recording');
+		isRecording = false;
 	} else {
-		updateListItems()
+		isRecording = true;
+		recording.setTitle('stop');
+
+		cameraView.startRecording({
+			recordingSound: shutter.getValue()		// default true
+		});
 	}
+});
 
-	// 最下段にスクロール
-	var lastSectionId = $.listView.sectionCount - 1;
-	var lastSection = $.listView.sections[lastSectionId]
-	var lastItemId = lastSection.items.length - 1
-	trace( "最下段にスクロールします。"+ lastSectionId +"/"+ lastItemId )
-	$.listView.scrollToItem( lastSectionId, lastItemId )
+var capture = Ti.UI.createButton({
+	top: 10,
+	left: 10,
+	width: Ti.UI.SIZE,
+	height: 44,
+	title: 'photo'
+});
+$.win.add(capture);
 
-} )
-
-Alloy.Collections.Entries.fetch();
-updateListItems()
-
-function updateListItems(){
-	trace( "updateListItems!!!" )
-	trace( Alloy.Collections.Entries.models.length )
-
-	var data = [];
-	for (var i = 0; i < Alloy.Collections.Entries.models.length; i++) {
-		if( i%4==0 ){
-			var thumbCount = 0
-			var listItem = {}
-			if( Alloy.Collections.Entries.models[i] ){
-				listItem.pic1 = {
-					image: Alloy.Collections.Entries.models[i].get("imagePath"),
-					visible: true,
-				}
-				thumbCount++
-			} else {
-				listItem.pic1 = { visible: false }
-			}
-			if( Alloy.Collections.Entries.models[i+1] ){
-				listItem.pic2 = {
-					image: Alloy.Collections.Entries.models[i+1].get("imagePath"),
-					visible: true,
-				}
-				thumbCount++
-			} else {
-				listItem.pic2 = { visible: false }
-			}
-			if( Alloy.Collections.Entries.models[i+2] ){
-				listItem.pic3 = {
-					image: Alloy.Collections.Entries.models[i+2].get("imagePath"),
-					visible: true,
-				}
-				thumbCount++
-			} else {
-				listItem.pic3 = { visible: false }
-			}
-			if( Alloy.Collections.Entries.models[i+3] ){
-				listItem.pic4 = {
-					image: Alloy.Collections.Entries.models[i+3].get("imagePath"),
-					visible: true,
-				}
-				thumbCount++
-			} else {
-				listItem.pic4 = { visible: false }
-			}
-			listItem.thumbCount = thumbCount
-			data.push( listItem );
+capture.addEventListener('click', function(){
+	cameraView.takePicture({
+		saveToPhotoGallery: save.getValue(),	// default false
+		shutterSound: shutter.getValue(),		// default true
+		success: function(e){
+			console.log(e);
+			console.log('width: ' + e.media.width);
+			console.log('height: ' + e.media.height);
+			console.log('mime: ' + e.media.mime);
+			preview.setImage(e.media);
+		},
+		error: function(e){
+			console.log(e);
 		}
+	});
+});
+
+var interval = Ti.UI.createButton({
+	top: 10,
+	width: Ti.UI.SIZE,
+	height: 44,
+	title: 'interval'
+});
+$.win.add(interval);
+
+cameraView.addEventListener('interval', function(e){
+	preview.setImage(e.media);
+});
+
+var isInterval = false;
+interval.addEventListener('click', function(){
+	if (isInterval) {
+		isInterval = false;
+		interval.setTitle('interval');
+		cameraView.stopInterval();
+	} else {
+		isInterval = true;
+		interval.setTitle('stop');
+
+		cameraView.startInterval({
+			saveToPhotoGallery: save.getValue(),	// default false
+			shutterSound: shutter.getValue(),		// default true
+			intervalDelay: 1000
+		});
 	}
-	rootSection.setItems( data, {animated:false} )
-}
+});
 
+var save = Ti.UI.createSwitch({
+	bottom: 10,
+	left: 10,
+	value: false
+});
+$.win.add(save);
 
+var shutter = Ti.UI.createSwitch({
+	bottom: 44,
+	left: 10,
+	value: false
+});
+$.win.add(shutter);
 
+var sepia = Ti.UI.createSwitch({
+	bottom: 10,
+	right: 10,
+	value: false
+});
+$.win.add(sepia);
 
+sepia.addEventListener('change', function(){
+	cameraView.setSepia(sepia.getValue());
+});
 
-
-
-
-
-
-// Filter the fetched collection before rendering. Don't return the
-// collection itself, but instead return an array of models 
-// that you would like to render. 
-function dataFilter( collection ){
-	trace(collection.models.length)
-	var out = []
-	var len = collection.models.length
-	var count = 0
-	for( var i=0; i<len; i++ ){
-		if( i%4==0 ){
-			var _rowData = []
-			_rowData.entryModel1 = collection.models[i]
-			_rowData.entryModel2 = collection.models[(i+1)]
-			_rowData.entryModel3 = collection.models[(i+2)]
-			_rowData.entryModel4 = collection.models[(i+3)]
-			out.push( _rowData )
-		}
-	}
-	return []
-	// return out
-	// return collection.where({ done: whereIndex === 1 ? 0 : 1 });
-}
-
-
-
-$.index.orientationModes = [Titanium.UI.PORTRAIT];
-$.index.open();
-
-
-
-
-
-
-
-
-
-function S4() {
-   return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-};
-function guid() {
-   return (S4()+S4()+'-'+S4()+'-'+S4()+'-'+S4()+'-'+S4()+S4()+S4());
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+var preview = Ti.UI.createImageView({
+	bottom: 10,
+	width: 48,
+	height: 64
+});
+$.win.add(preview);
