@@ -8,6 +8,7 @@
 @implementation BeK0sukeTicameraView
 
 BOOL waitingForShutter = NO;
+BOOL initialized = NO;// カメラの初期設定が終わっている？
 AVCaptureStillImageOutput* stillImageOutput;
 AVCaptureDevice *captureDevice;
 
@@ -40,7 +41,6 @@ AVCaptureDevice *captureDevice;
         self.videoPreview = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, bounds.size.width, bounds.size.height)];
         [self addSubview:self.videoPreview];
     }
-    [self setupAVCapture];
 #endif
 }
 
@@ -53,53 +53,76 @@ AVCaptureDevice *captureDevice;
 	[pool release];
 }
 
--(void)setupAVCapture{
+-(void)startCamera:(id)args{
     NSLog( @"TicameraView setupAVCapture" );
+    
 #ifndef __i386__
     NSError *error = nil;
-
-
-    captureDevice = [self deviceWithPosition: [TiUtils intValue:[self.proxy valueForKey:@"cameraPosition"] def:AVCaptureDevicePositionBack]];
-    [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
-    self.videoInput = [[AVCaptureDeviceInput alloc] initWithDevice:captureDevice error:&error];
-
-    if (!self.videoInput){
-        NSLog(@"[ERROR] %@", error);
+    
+    if( initialized == NO ){
+        
+        captureDevice = [self deviceWithPosition: [TiUtils intValue:[self.proxy valueForKey:@"cameraPosition"] def:AVCaptureDevicePositionBack]];
+        [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
+        self.videoInput = [[AVCaptureDeviceInput alloc] initWithDevice:captureDevice error:&error];
+        
+        if (!self.videoInput){
+            NSLog(@"[ERROR] %@", error);
+            return;
+        }
+        
+        self.videoSession = [[AVCaptureSession alloc] init];
+        [self.videoSession addInput:self.videoInput];
+        
+        [self.videoSession beginConfiguration];
+        //self.videoSession.sessionPreset = [TiUtils intValue:[self.proxy valueForKey:@"videoQuality"] def:AVCaptureSessionPresetMedium];
+        self.videoSession.sessionPreset = AVCaptureSessionPresetPhoto;
+        [self.videoSession commitConfiguration];
+        
+        [captureDevice addObserver:self
+                        forKeyPath:@"adjustingExposure"
+                           options:NSKeyValueObservingOptionNew
+                           context:nil];
+        
+        // 画像への出力を作成し、セッションに追加
+        stillImageOutput = [[AVCaptureStillImageOutput alloc] init];
+        [self.videoSession addOutput:stillImageOutput];
+        [self.videoSession addObserver:self forKeyPath:@"running" options:NSKeyValueObservingOptionNew context:nil];
+        
+        // キャプチャーセッションから入力のプレビュー表示を作成
+        AVCaptureVideoPreviewLayer *captureVideoPreviewLayer = [[AVCaptureVideoPreviewLayer alloc] initWithSession:self.videoSession];
+        captureVideoPreviewLayer.frame = self.bounds;
+        captureVideoPreviewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+        
+        // レイヤーをViewに設定
+        CALayer *previewLayer = self.layer;
+        previewLayer.masksToBounds = YES;
+        [previewLayer addSublayer:captureVideoPreviewLayer];
+        
+        isCameraInputOutput = YES;
+        initialized = YES;
+    }
+    
+    if( [self.videoSession isRunning]==YES ){
+        NSLog( @"すでにカメラ起動中です" );
         return;
     }
-
-    self.videoSession = [[AVCaptureSession alloc] init];
-    [self.videoSession addInput:self.videoInput];
-
-    [self.videoSession beginConfiguration];
-    //self.videoSession.sessionPreset = [TiUtils intValue:[self.proxy valueForKey:@"videoQuality"] def:AVCaptureSessionPresetMedium];
-    self.videoSession.sessionPreset = AVCaptureSessionPresetPhoto;
-    [self.videoSession commitConfiguration];
-
-    [captureDevice addObserver:self
-                    forKeyPath:@"adjustingExposure"
-                       options:NSKeyValueObservingOptionNew
-                       context:nil];
-
-    // 画像への出力を作成し、セッションに追加
-    stillImageOutput = [[AVCaptureStillImageOutput alloc] init];
-    [self.videoSession addOutput:stillImageOutput];
-    [self.videoSession addObserver:self forKeyPath:@"running" options:NSKeyValueObservingOptionNew context:nil];
-
-    // キャプチャーセッションから入力のプレビュー表示を作成
-    AVCaptureVideoPreviewLayer *captureVideoPreviewLayer = [[AVCaptureVideoPreviewLayer alloc] initWithSession:self.videoSession];
-    captureVideoPreviewLayer.frame = self.bounds;
-    captureVideoPreviewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-
-    // レイヤーをViewに設定
-    CALayer *previewLayer = self.layer;
-    previewLayer.masksToBounds = YES;
-    [previewLayer addSublayer:captureVideoPreviewLayer];
-
-    isCameraInputOutput = YES;
-
+    
     [self.videoSession startRunning];
+    
 #endif
+}
+
+-(void)stopCamera:(id)args{
+    if( [self.videoSession isRunning]==NO ){
+        NSLog( @"すでにカメラ終了してます" );
+        return;
+    }
+    [self.videoSession stopRunning];
+}
+
+
+
+-(void)setupAVCapture{
 }
 
 
@@ -115,6 +138,10 @@ AVCaptureDevice *captureDevice;
     return nil;
 }
 #endif
+
+
+
+
 
 
 
@@ -506,27 +533,7 @@ AVCaptureDevice *captureDevice;
 #endif
 }
 
--(void)startCamera:(id)args
-{
-    if (isCameraInputOutput)
-    {
-        NSLog(@"[ERROR] camera input/output started");
-        return;
-    }
 
-    isCameraInputOutput = YES;
-}
-
--(void)stopCamera:(id)args
-{
-    if (!isCameraInputOutput)
-    {
-        NSLog(@"[ERROR] camera input/output stopped");
-        return;
-    }
-
-    isCameraInputOutput = NO;
-}
 
 
 
@@ -595,8 +602,7 @@ AVCaptureDevice *captureDevice;
 #endif
 }
 
--(void)stopRecording:(id)args
-{
+-(void)stopRecording:(id)args{
 #ifndef __i386__
     ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
     ENSURE_UI_THREAD(stopRecording, args);
@@ -680,31 +686,13 @@ AVCaptureDevice *captureDevice;
 }
 
 
--(void)startInterval:(id)args
-{
-    ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
-    ENSURE_UI_THREAD(startInterval, args);
-
-    intervalSaveToPhotoGallery = [TiUtils boolValue:[args valueForKey:@"saveToPhotoGallery"] def:NO];
-    intervalShutterSound = [TiUtils boolValue:[args valueForKey:@"shutterSound"] def:YES];
-
-    NSNumber *delay = [NSNumber numberWithFloat:[[args objectForKey:@"intervalDelay"] intValue] / 1000];
-    isInterval = NO;
-
-    self.intervalTimer = [NSTimer scheduledTimerWithTimeInterval:[delay floatValue] target:self selector:@selector(intervalFlag:) userInfo:nil repeats:YES];
+-(void)startInterval:(id)args{
 }
 
--(void)intervalFlag:(NSTimer*)timer
-{
-    isInterval = YES;
+-(void)intervalFlag:(NSTimer*)timer{
 }
 
--(void)stopInterval:(id)args
-{
-    ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
-    ENSURE_UI_THREAD(stopInterval, args);
-
-    [self.intervalTimer invalidate];
+-(void)stopInterval:(id)args{
 }
 
 
@@ -783,83 +771,10 @@ AVCaptureDevice *captureDevice;
     return image;
 }
 
--(void)captureOutput:(AVCaptureOutput *)captureOutput
-didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
-      fromConnection:(AVCaptureConnection *)connection
-{
-    if (!isCameraInputOutput)
-    {
-        return;
-    }
-
-    UIImage *image = [self imageFromSampleBuffer:sampleBuffer];
-
-    float scale = [[UIScreen mainScreen] scale];
-    CGRect rect = CGRectMake((image.size.width - [TiUtils floatValue:[self.proxy valueForKey:@"width"]]) * scale / 2.0,
-                             (image.size.height - [TiUtils floatValue:[self.proxy valueForKey:@"height"]]) * scale / 2.0,
-                             [TiUtils floatValue:[self.proxy valueForKey:@"width"]] * scale,
-                             [TiUtils floatValue:[self.proxy valueForKey:@"height"]] * scale);
-    CGImageRef imageRef = CGImageCreateWithImageInRect([image CGImage], rect);
-    image = [UIImage imageWithCGImage:imageRef
-                                scale:scale
-                          orientation:UIImageOrientationUp];
-    CGImageRelease(imageRef);
-
-    if (isInterval && [self.proxy _hasListeners:@"interval"])
-	{
-        isInterval = NO;
-
-        if (intervalShutterSound)
-        {
-            AudioServicesPlaySystemSound(1108);
-        }
-
-        if (intervalSaveToPhotoGallery)
-        {
-            UIImageWriteToSavedPhotosAlbum(image, self, nil, nil);
-        }
-
-        NSDictionary *properties = [NSDictionary dictionaryWithObjectsAndKeys:
-                                    [[[TiBlob alloc] initWithImage:image] autorelease], @"media",
-                                    nil];
-		[self.proxy fireEvent:@"interval" withObject:properties];
-    }
-
-    if (isRecording)
-    {
-        [self.recordingBuffer addObject:image];
-
-        if ([self.recordingInput isReadyForMoreMediaData])
-        {
-            CVPixelBufferRef buffer = (CVPixelBufferRef)[self pixelBufferFromCGImage:[[self.recordingBuffer objectAtIndex:0] CGImage] size:recordingSize];
-
-            if (buffer)
-            {
-                if ([self.recordingAdaptor appendPixelBuffer:buffer
-                                        withPresentationTime:CMTimeMake(recordingFrame, [TiUtils intValue:[self.proxy valueForKey:@"frameDuration"] def:16])])
-                {
-                    recordingFrame++;
-                }
-                else
-                {
-                    NSLog(@"[ERROR] recording append failed");
-                }
-
-                CFRelease(buffer);
-                buffer = nil;
-            }
-
-            [self.recordingBuffer removeObjectAtIndex:0];
-        }
-    }
-
-    dispatch_async(dispatch_get_main_queue(), ^{
-        self.videoPreview.image = image;
-    });
+-(void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection{
 }
 
--(void)tapDetected:(UITapGestureRecognizer*)tapRecognizer
-{
+-(void)tapDetected:(UITapGestureRecognizer*)tapRecognizer{
     CGPoint point = [tapRecognizer locationInView:tapRecognizer.view];
     CGPoint pointOfInterest = CGPointMake(point.y / [TiUtils floatValue:[self.proxy valueForKey:@"height"]],
                                           1.0 - point.x / [TiUtils floatValue:[self.proxy valueForKey:@"width"]]);
@@ -867,8 +782,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     NSError *error = nil;
 
-    if ([device lockForConfiguration:&error])
-    {
+    if ([device lockForConfiguration:&error]){
         if ([device isFocusPointOfInterestSupported] &&
             [device isFocusModeSupported:AVCaptureFocusModeAutoFocus])
         {

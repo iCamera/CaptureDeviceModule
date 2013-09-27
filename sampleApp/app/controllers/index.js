@@ -20,7 +20,7 @@ var cameraView = TiCamera.createView({
 });
 $.win.add(cameraView);
 
-
+cameraView.startCamera()
 
 cameraView.addEventListener( "imageProcessed", function(e){
 	trace( "_onImageProcessed" )
