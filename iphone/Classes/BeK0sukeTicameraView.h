@@ -48,4 +48,6 @@
 -(void)startInterval:(id)args;
 -(void)stopInterval:(id)args;
 
+- (void)focusAndExposureAtPoint:(id)args;
+
 @end

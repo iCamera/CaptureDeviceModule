@@ -43,4 +43,9 @@ USE_VIEW_FOR_UI_METHOD(stopRecording);
 USE_VIEW_FOR_UI_METHOD(startInterval);
 USE_VIEW_FOR_UI_METHOD(stopInterval);
 
+USE_VIEW_FOR_UI_METHOD(focusAndExposureAtPoint);
+USE_VIEW_FOR_UI_METHOD(setFlashModeAuto);
+USE_VIEW_FOR_UI_METHOD(setFlashModeOn);
+USE_VIEW_FOR_UI_METHOD(setFlashModeOff);
+
 @end
