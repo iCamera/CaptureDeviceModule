@@ -3,8 +3,12 @@
  */
 
 #import "BeK0sukeTicameraView.h"
+#import <AssetsLibrary/AssetsLibrary.h>
 
 @implementation BeK0sukeTicameraView
+
+BOOL waitingForShutter = NO;
+AVCaptureStillImageOutput* stillImageOutput;
 
 -(void)dealloc
 {
@@ -40,8 +44,8 @@
     if (self.videoPreview == nil)
     {
         self.videoPreview = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0,
-                                                                     bounds.size.width,
-                                                                     bounds.size.height)];
+                                                                          bounds.size.width,
+                                                                          bounds.size.height)];
         [self addSubview:self.videoPreview];
     }
     
@@ -102,17 +106,17 @@
     previewLayer.masksToBounds = YES;
     [previewLayer addSublayer:captureVideoPreviewLayer];
     
-//    self.videoOutput = [[AVCaptureVideoDataOutput alloc] init];
-//    [self.videoSession addOutput:self.videoOutput];
+    //    self.videoOutput = [[AVCaptureVideoDataOutput alloc] init];
+    //    [self.videoSession addOutput:self.videoOutput];
     
-//    dispatch_queue_t queue = dispatch_queue_create("be.k0suke.ticamera.captureQueue", NULL);
-//    [self.videoOutput setAlwaysDiscardsLateVideoFrames:TRUE];
-//    [self.videoOutput setSampleBufferDelegate:self queue:queue];
+    //    dispatch_queue_t queue = dispatch_queue_create("be.k0suke.ticamera.captureQueue", NULL);
+    //    [self.videoOutput setAlwaysDiscardsLateVideoFrames:TRUE];
+    //    [self.videoOutput setSampleBufferDelegate:self queue:queue];
     
-//    self.videoOutput.videoSettings = @{(id)kCVPixelBufferPixelFormatTypeKey : [NSNumber numberWithInt:kCVPixelFormatType_32BGRA]};
+    //    self.videoOutput.videoSettings = @{(id)kCVPixelBufferPixelFormatTypeKey : [NSNumber numberWithInt:kCVPixelFormatType_32BGRA]};
     
-//    AVCaptureConnection *videoConnection = [self.videoOutput connectionWithMediaType:AVMediaTypeVideo];
-//    videoConnection.videoMinFrameDuration = CMTimeMake(1, [TiUtils intValue:[self.proxy valueForKey:@"frameDuration"] def:16]);
+    //    AVCaptureConnection *videoConnection = [self.videoOutput connectionWithMediaType:AVMediaTypeVideo];
+    //    videoConnection.videoMinFrameDuration = CMTimeMake(1, [TiUtils intValue:[self.proxy valueForKey:@"frameDuration"] def:16]);
     
     isCameraInputOutput = YES;
     
@@ -137,51 +141,208 @@
 }
 #endif
 
+
+
 -(void)takePicture:(id)args
 {
 #ifndef __i386__
-    ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
-    ENSURE_UI_THREAD(takePicture, args);
+    NSLog( @"CapturedeviceFinderProxy takePhoto" );
     
-    successPictureCallback = [args objectForKey:@"success"];
-	ENSURE_TYPE_OR_NIL(successPictureCallback, KrollCallback);
-	[successPictureCallback retain];
-    
-    errorPictureCallback = [args objectForKey:@"error"];
-	ENSURE_TYPE_OR_NIL(errorPictureCallback, KrollCallback);
-	[errorPictureCallback retain];
-    
-    if ([TiUtils boolValue:[args valueForKey:@"shutterSound"] def:YES])
-    {
-        AudioServicesPlaySystemSound(1108);
+    if( waitingForShutter ){
+        NSLog( @"前回のシャッターが切れるのを待っているので新しく撮影処理は開始しません" );
+        return;
     }
     
-    if (self.videoPreview.image)
-    {
-        if ([TiUtils boolValue:[args valueForKey:@"saveToPhotoGallery"] def:NO])
-        {
-            UIImageWriteToSavedPhotosAlbum(self.videoPreview.image, self, nil, nil);
-        }
-        
-        if (successPictureCallback != nil)
-        {
-            id listener = [[successPictureCallback retain] autorelease];
-            NSMutableDictionary *event = [TiUtils dictionaryWithCode:0 message:nil];
-            [event setObject:[[[TiBlob alloc] initWithImage:self.videoPreview.image] autorelease] forKey:@"media"];
-            [NSThread detachNewThreadSelector:@selector(dispatchCallback:) toTarget:self withObject:[NSArray arrayWithObjects:@"success", event, listener, nil]];
-        }
-    }
-    else
-    {
-        if (errorPictureCallback != nil)
-        {
-            id listener = [[errorPictureCallback retain] autorelease];
-            NSMutableDictionary *event = [TiUtils dictionaryWithCode:-1 message:@"AVCaptureConnection connect failed"];
-            [NSThread detachNewThreadSelector:@selector(dispatchCallback:) toTarget:self withObject:[NSArray arrayWithObjects:@"error", event, listener, nil]];
-        }
-    }
+    waitingForShutter = YES;
+    
+    // JavaScript からわたってきたパラメータを解釈
+    ENSURE_SINGLE_ARG( args, NSDictionary );
+    NSLog( @"%@", args );
+    NSNumber* saveToDevice = [args objectForKey:@"saveToDevice"];
+    
+	AVCaptureConnection *connection = [[stillImageOutput connections] lastObject];
+	[stillImageOutput captureStillImageAsynchronouslyFromConnection:connection
+                                                  completionHandler:^( CMSampleBufferRef imageDataSampleBuffer, NSError *error ){
+                                                      NSLog( @"シャッターを切りました" );
+                                                      waitingForShutter = NO;
+                                                      
+                                                      // イベント発行
+                                                      [self.proxy fireEvent:@"shutter" withObject:nil];
+                                                      
+                                                      NSData *data = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
+                                                      UIImage *image = [UIImage imageWithData:data];
+                                                      
+                                                      // フロントカメラならフリップ
+                                                      TiBlob* original_blob;
+                                                      //                                                 if( frontCameraMode ){
+                                                      //                                                     NSLog( @"フリップします" );
+                                                      //                                                     //                                                     image = [UIImage imageWithCGImage:image.CGImage scale:1.0 orientation: UIImageOrientationLeftMirrored];
+                                                      //                                                     NSData* content_data = UIImageJPEGRepresentation( image, 0.8 );
+                                                      //                                                     original_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
+                                                      //                                                 } else {
+                                                      //                                                     original_blob = [[[TiBlob alloc] initWithData:data mimetype:@"image/jpeg"] autorelease];
+                                                      //                                                 }
+                                                      original_blob = [[[TiBlob alloc] initWithData:data mimetype:@"image/jpeg"] autorelease];
+                                                      
+                                                      // 送信用データ(縦852pxサイズ)を作成
+                                                      //                                                 UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 640, 852)];// 重い
+                                                      //                                                 NSData* content_data = UIImageJPEGRepresentation( content_img, 0.8 );
+                                                      //                                                 TiBlob* content_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
+                                                      
+                                                      // サムネイルのjpegデータを作成
+                                                      //                                                 UIImage* thumbnail_img = [self resizeImage:image rect:CGRectMake(0, 0, 150, 200)];
+                                                      UIImage* thumbnail_img = [self imageByScalingAndCropping:image ForSize:CGSizeMake(150, 150)];
+                                                      NSData *thumbnail_data = UIImageJPEGRepresentation( thumbnail_img, 0.8 );
+                                                      TiBlob* thumbnail_blob = [[[TiBlob alloc] initWithData:thumbnail_data mimetype:@"image/jpeg"] autorelease];
+                                                      
+                                                      // イベント発行
+                                                      NSDictionary *dic = @{@"original":original_blob, @"content":original_blob, @"thumbnail":thumbnail_blob, @"key2":@"value2"};
+                                                      [self.proxy fireEvent:@"imageProcessed" withObject:dic];
+                                                      
+                                                      if ([TiUtils boolValue:[args valueForKey:@"saveToPhotoGallery"] def:NO]){
+//                                                          ALAssetsLibrary *library = [[[ALAssetsLibrary alloc] init] autorelease];
+//                                                          [library writeImageToSavedPhotosAlbum:image.CGImage orientation:image.imageOrientation completionBlock:^(NSURL *assetURL, NSError *error){}];
+                                                      }
+                                                  }
+     ];
+    
 #endif
 }
+
+
+- (UIImage*)imageByScalingAndCropping:(UIImage*)image ForSize:(CGSize)targetSize {
+    UIImage *sourceImage = image;
+    UIImage *newImage = nil;
+    CGSize imageSize = sourceImage.size;
+    CGFloat width = imageSize.width;
+    CGFloat height = imageSize.height;
+    CGFloat targetWidth = targetSize.width;
+    CGFloat targetHeight = targetSize.height;
+    CGFloat scaleFactor = 0.0;
+    CGFloat scaledWidth = targetWidth;
+    CGFloat scaledHeight = targetHeight;
+    CGPoint thumbnailPoint = CGPointMake(0.0,0.0);
+    
+    if (CGSizeEqualToSize(imageSize, targetSize) == NO){
+        CGFloat widthFactor = targetWidth / width;
+        CGFloat heightFactor = targetHeight / height;
+        
+        if (widthFactor > heightFactor)   {
+            scaleFactor = widthFactor; // scale to fit height
+        } else {
+            scaleFactor = heightFactor; // scale to fit width
+        }
+        
+        scaledWidth  = width * scaleFactor;
+        scaledHeight = height * scaleFactor;
+        
+        // center the image
+        if (widthFactor > heightFactor){
+            thumbnailPoint.y = (targetHeight - scaledHeight) * 0.5;
+        }else{
+            if (widthFactor < heightFactor){
+                thumbnailPoint.x = (targetWidth - scaledWidth) * 0.5;
+            }
+        }
+    }
+    
+    UIGraphicsBeginImageContext(targetSize); // this will crop
+    
+    CGRect thumbnailRect = CGRectZero;
+    thumbnailRect.origin = thumbnailPoint;
+    thumbnailRect.size.width  = scaledWidth;
+    thumbnailRect.size.height = scaledHeight;
+    
+    [sourceImage drawInRect:thumbnailRect];
+    
+    newImage = UIGraphicsGetImageFromCurrentImageContext();
+    
+    if(newImage == nil){
+        NSLog(@"could not scale image");
+    }
+    
+    //pop the context to get back to the default
+    UIGraphicsEndImageContext();
+    return newImage;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ -(void)takePicture:(id)args
+ {
+ #ifndef __i386__
+ ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
+ ENSURE_UI_THREAD(takePicture, args);
+ 
+ successPictureCallback = [args objectForKey:@"success"];
+ ENSURE_TYPE_OR_NIL(successPictureCallback, KrollCallback);
+ [successPictureCallback retain];
+ 
+ errorPictureCallback = [args objectForKey:@"error"];
+ ENSURE_TYPE_OR_NIL(errorPictureCallback, KrollCallback);
+ [errorPictureCallback retain];
+ 
+ if ([TiUtils boolValue:[args valueForKey:@"shutterSound"] def:YES])
+ {
+ AudioServicesPlaySystemSound(1108);
+ }
+ 
+ if (self.videoPreview.image)
+ {
+ if ([TiUtils boolValue:[args valueForKey:@"saveToPhotoGallery"] def:NO])
+ {
+ UIImageWriteToSavedPhotosAlbum(self.videoPreview.image, self, nil, nil);
+ }
+ 
+ if (successPictureCallback != nil)
+ {
+ id listener = [[successPictureCallback retain] autorelease];
+ NSMutableDictionary *event = [TiUtils dictionaryWithCode:0 message:nil];
+ [event setObject:[[[TiBlob alloc] initWithImage:self.videoPreview.image] autorelease] forKey:@"media"];
+ [NSThread detachNewThreadSelector:@selector(dispatchCallback:) toTarget:self withObject:[NSArray arrayWithObjects:@"success", event, listener, nil]];
+ }
+ }
+ else
+ {
+ if (errorPictureCallback != nil)
+ {
+ id listener = [[errorPictureCallback retain] autorelease];
+ NSMutableDictionary *event = [TiUtils dictionaryWithCode:-1 message:@"AVCaptureConnection connect failed"];
+ [NSThread detachNewThreadSelector:@selector(dispatchCallback:) toTarget:self withObject:[NSArray arrayWithObjects:@"error", event, listener, nil]];
+ }
+ }
+ #endif
+ }
+ */
 
 -(void)startRecording:(id)args
 {
@@ -215,7 +376,7 @@
         NSLog(@"[ERROR] do not recording start");
         return;
     }
-
+    
     NSDictionary *settings = @{AVVideoCodecKey: AVVideoCodecH264,
                                AVVideoWidthKey: [NSNumber numberWithInt:recordingSize.width],
                                AVVideoHeightKey: [NSNumber numberWithInt:recordingSize.height]};
@@ -230,8 +391,8 @@
     
     NSDictionary *bufferAttributes = @{(id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32ARGB)};
     self.recordingAdaptor = [AVAssetWriterInputPixelBufferAdaptor
-                        assetWriterInputPixelBufferAdaptorWithAssetWriterInput:self.recordingInput
-                        sourcePixelBufferAttributes:bufferAttributes];
+                             assetWriterInputPixelBufferAdaptorWithAssetWriterInput:self.recordingInput
+                             sourcePixelBufferAttributes:bufferAttributes];
     [self.recordingWriter addInput:self.recordingInput];
     [self.recordingWriter startWriting];
     [self.recordingWriter startSessionAtSourceTime:kCMTimeZero];
@@ -250,7 +411,7 @@
 #ifndef __i386__
     ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
     ENSURE_UI_THREAD(stopRecording, args);
-
+    
     successRecordingCallback = [args objectForKey:@"success"];
 	ENSURE_TYPE_OR_NIL(successRecordingCallback, KrollCallback);
 	[successRecordingCallback retain];
@@ -308,7 +469,7 @@
             if (buffer)
             {
                 if ([self.recordingAdaptor appendPixelBuffer:buffer
-                                   withPresentationTime:CMTimeMake(recordingFrame, [TiUtils intValue:[self.proxy valueForKey:@"frameDuration"] def:16])])
+                                        withPresentationTime:CMTimeMake(recordingFrame, [TiUtils intValue:[self.proxy valueForKey:@"frameDuration"] def:16])])
                 {
                     recordingFrame++;
                 }
@@ -328,6 +489,7 @@
     isRecording = NO;
 #endif
 }
+
 
 -(void)startInterval:(id)args
 {
@@ -352,7 +514,7 @@
 {
     ENSURE_SINGLE_ARG_OR_NIL(args, NSDictionary);
     ENSURE_UI_THREAD(stopInterval, args);
-
+    
     [self.intervalTimer invalidate];
 }
 
@@ -463,7 +625,7 @@
             return;
         }
     }
-
+    
     AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     NSError *error = nil;
     
@@ -577,7 +739,7 @@
 
 -(void)captureOutput:(AVCaptureOutput *)captureOutput
 didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
-       fromConnection:(AVCaptureConnection *)connection
+      fromConnection:(AVCaptureConnection *)connection
 {
     if (!isCameraInputOutput)
     {
@@ -605,7 +767,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         {
             AudioServicesPlaySystemSound(1108);
         }
-
+        
         if (intervalSaveToPhotoGallery)
         {
             UIImageWriteToSavedPhotosAlbum(image, self, nil, nil);
@@ -628,7 +790,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
             if (buffer)
             {
                 if ([self.recordingAdaptor appendPixelBuffer:buffer
-                                   withPresentationTime:CMTimeMake(recordingFrame, [TiUtils intValue:[self.proxy valueForKey:@"frameDuration"] def:16])])
+                                        withPresentationTime:CMTimeMake(recordingFrame, [TiUtils intValue:[self.proxy valueForKey:@"frameDuration"] def:16])])
                 {
                     recordingFrame++;
                 }
@@ -681,9 +843,9 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 
 -(void)observeValueForKeyPath:(NSString *)keyPath
-                      ofObject:(id)object
-                        change:(NSDictionary *)change
-                       context:(void *)context
+                     ofObject:(id)object
+                       change:(NSDictionary *)change
+                      context:(void *)context
 {
     if (!adjustingExposure)
     {
