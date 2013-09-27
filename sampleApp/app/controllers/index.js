@@ -3,6 +3,8 @@
 // to test out the module and to provide instructions
 // to users on how to use it by example.
 
+trace = Ti.API.info
+
 $.win.open()
 
 // TODO: write your module tests here
@@ -17,6 +19,27 @@ var cameraView = TiCamera.createView({
 	frameDuration: 16
 });
 $.win.add(cameraView);
+
+
+
+cameraView.addEventListener( "imageProcessed", function(e){
+	trace( "_onImageProcessed" )
+	trace( "e.content.length = "+ Math.floor(e.content.length/1000) +"KB" )
+	trace( "e.thumbnail.length = "+ e.thumbnail.length +"Bytes" )
+
+	// 画像ファイルを一時的に保存
+	var image = e.thumbnail;
+	var newFile = Ti.Filesystem.getFile( Ti.Filesystem.tempDirectory, Ti.Platform.createUUID() +'.jpg' );
+	newFile.createFile();
+	newFile.write( image );
+	trace( String(newFile.size) )
+	trace( newFile.nativePath )
+
+	preview.image = newFile.nativePath;
+} )
+
+
+
 
 var camera = Ti.UI.createButton({
 	top: 64,
