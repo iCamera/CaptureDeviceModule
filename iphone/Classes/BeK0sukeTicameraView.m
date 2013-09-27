@@ -64,9 +64,6 @@
 #ifndef __i386__
     NSError *error = nil;
     
-    // プレビュー用のビューを生成
-    UIView* previewView = [[UIView alloc] initWithFrame:CGRectMake(0,0,200,200)];
-    [self addSubview:previewView];
     
     AVCaptureDevice *captureDevice = [self deviceWithPosition: [TiUtils intValue:[self.proxy valueForKey:@"cameraPosition"]
                                                                              def:AVCaptureDevicePositionBack]];
@@ -101,7 +98,7 @@
     captureVideoPreviewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     
     // レイヤーをViewに設定
-    CALayer *previewLayer = previewView.layer;
+    CALayer *previewLayer = self.layer;
     previewLayer.masksToBounds = YES;
     [previewLayer addSublayer:captureVideoPreviewLayer];
     

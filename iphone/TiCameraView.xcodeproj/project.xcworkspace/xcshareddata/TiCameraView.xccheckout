@@ -5,48 +5,36 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
-	<string>8059780D-E20C-4BB9-BBDE-62A3BE432676</string>
+	<string>4BB5114E-1946-42F3-8460-0D58E1663B6D</string>
 	<key>IDESourceControlProjectName</key>
 	<string>TiCameraView</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
-		<key>0A7EDF75-E912-4387-A783-4E2116A1E84F</key>
-		<string>ssh://github.com/k0sukey/TiCameraView.git</string>
-		<key>EB05752B-E63C-4865-BC44-F676A2B40753</key>
-		<string>ssh://github.com/BradLarson/GPUImage.git</string>
+		<key>8FEF6D73-B192-4BBA-8B04-44E5D57ADD85</key>
+		<string>ssh://github.com/dividual/CaptureDeviceModule.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>TiCameraView.xcodeproj/project.xcworkspace</string>
+	<string>iphone/TiCameraView.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
-		<key>0A7EDF75-E912-4387-A783-4E2116A1E84F</key>
-		<string>../..</string>
-		<key>EB05752B-E63C-4865-BC44-F676A2B40753</key>
-		<string>../../GPUImage</string>
+		<key>8FEF6D73-B192-4BBA-8B04-44E5D57ADD85</key>
+		<string>../../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
-	<string>ssh://github.com/k0sukey/TiCameraView.git</string>
+	<string>ssh://github.com/dividual/CaptureDeviceModule.git</string>
 	<key>IDESourceControlProjectVersion</key>
 	<integer>110</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
-	<string>0A7EDF75-E912-4387-A783-4E2116A1E84F</string>
+	<string>8FEF6D73-B192-4BBA-8B04-44E5D57ADD85</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>EB05752B-E63C-4865-BC44-F676A2B40753</string>
+			<string>8FEF6D73-B192-4BBA-8B04-44E5D57ADD85</string>
 			<key>IDESourceControlWCCName</key>
-			<string>GPUImage</string>
-		</dict>
-		<dict>
-			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
-			<string>public.vcs.git</string>
-			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>0A7EDF75-E912-4387-A783-4E2116A1E84F</string>
-			<key>IDESourceControlWCCName</key>
-			<string>TiCameraView</string>
+			<string>CaptureDeviceModule</string>
 		</dict>
 	</array>
 </dict>
