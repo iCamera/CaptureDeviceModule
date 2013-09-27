@@ -247,17 +247,15 @@ BOOL waitingForShutter = NO;
         started = YES;
         //    self.view.backgroundColor = [UIColor redColor];
         
-        // カメラを取得して初期化
+        UIView* previewView = [[UIView alloc] initWithFrame:CGRectMake(0,0,200,200)];
+        [self.view addSubview:previewView];
+        
+        
         NSError *error = nil;
         
-        captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
-        [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
-        AVCaptureDeviceInput *videoInput = [AVCaptureDeviceInput deviceInputWithDevice:captureDevice error:&error];
-        
-        // セッション初期化
-        captureSession = [[[AVCaptureSession alloc] init] autorelease];
+        // 入力と出力からキャプチャーセッションを作成
+         captureSession = [[[AVCaptureSession alloc] init] autorelease];
         [captureSession beginConfiguration];
-        [captureSession addInput:videoInput];
         
         ENSURE_SINGLE_ARG( args, NSDictionary );
         NSLog( @"%@", args );
@@ -270,18 +268,31 @@ BOOL waitingForShutter = NO;
             captureSession.sessionPreset = AVCaptureSessionPresetPhoto;
         }
         [captureSession commitConfiguration];
-        
         [captureSession addObserver:self forKeyPath:@"running" options:NSKeyValueObservingOptionNew context:nil];
         
-        previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:captureSession];
-        previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-        previewLayer.frame = self.view.bounds;
-        NSLog( @"%@", NSStringFromCGRect(previewLayer.frame) );
-        [self.view.layer insertSublayer:previewLayer atIndex:0];
         
-        // 出力の初期化
+        // 正面に配置されているカメラを取得
+        captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+        [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
+        
+         // カメラからの入力を作成し、セッションに追加
+        AVCaptureDeviceInput *videoInput = [AVCaptureDeviceInput deviceInputWithDevice:captureDevice error:&error];
+        [captureSession addInput:videoInput];
+        
+        // 画像への出力を作成し、セッションに追加
         imageOutput = [[[AVCaptureStillImageOutput alloc] init] autorelease];
         [captureSession addOutput:imageOutput];
+
+        // キャプチャーセッションから入力のプレビュー表示を作成
+        AVCaptureVideoPreviewLayer *captureVideoPreviewLayer = [[AVCaptureVideoPreviewLayer alloc] initWithSession:captureSession];
+        captureVideoPreviewLayer.frame = self.view.bounds;
+        captureVideoPreviewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+        
+        // レイヤーをViewに設定
+        CALayer *previewLayer = previewView.layer;
+        previewLayer.masksToBounds = YES;
+        [previewLayer addSublayer:captureVideoPreviewLayer];
+
         
         // セッション開始
         [captureSession startRunning];
