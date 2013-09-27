@@ -9,9 +9,9 @@
 
 BOOL waitingForShutter = NO;
 AVCaptureStillImageOutput* stillImageOutput;
+AVCaptureDevice *captureDevice;
 
--(void)dealloc
-{
+-(void)dealloc{
     RELEASE_TO_NIL(successPictureCallback);
     RELEASE_TO_NIL(errorPictureCallback);
     RELEASE_TO_NIL(successRecordingCallback);
@@ -22,15 +22,11 @@ AVCaptureStillImageOutput* stillImageOutput;
     [super dealloc];
 }
 
--(id)init
-{
+-(id)init{
     self = [super init];
 #ifndef __i386__
-    if (self)
-    {
-        UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc]
-                                                 initWithTarget:self
-                                                 action:@selector(tapDetected:)];
+    if (self){
+        UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapDetected:)];
         [self addGestureRecognizer:tapRecognizer];
         [tapRecognizer release];
     }
@@ -38,23 +34,17 @@ AVCaptureStillImageOutput* stillImageOutput;
     return self;
 }
 
--(void)frameSizeChanged:(CGRect)frame bounds:(CGRect)bounds
-{
+-(void)frameSizeChanged:(CGRect)frame bounds:(CGRect)bounds{
 #ifndef __i386__
-    if (self.videoPreview == nil)
-    {
-        self.videoPreview = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0,
-                                                                          bounds.size.width,
-                                                                          bounds.size.height)];
+    if (self.videoPreview == nil){
+        self.videoPreview = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, bounds.size.width, bounds.size.height)];
         [self addSubview:self.videoPreview];
     }
-
     [self setupAVCapture];
 #endif
 }
 
--(void)dispatchCallback:(NSArray*)args
-{
+-(void)dispatchCallback:(NSArray*)args{
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	NSString *type = [args objectAtIndex:0];
 	id object = [args objectAtIndex:1];
@@ -63,13 +53,14 @@ AVCaptureStillImageOutput* stillImageOutput;
 	[pool release];
 }
 
--(void)setupAVCapture
-{
+-(void)setupAVCapture{
+    NSLog( @"TicameraView setupAVCapture" );
 #ifndef __i386__
     NSError *error = nil;
 
 
-    AVCaptureDevice *captureDevice = [self deviceWithPosition: [TiUtils intValue:[self.proxy valueForKey:@"cameraPosition"] def:AVCaptureDevicePositionBack]];
+    captureDevice = [self deviceWithPosition: [TiUtils intValue:[self.proxy valueForKey:@"cameraPosition"] def:AVCaptureDevicePositionBack]];
+    [captureDevice addObserver:self forKeyPath:@"adjustingFocus" options:NSKeyValueObservingOptionNew context:nil];
     self.videoInput = [[AVCaptureDeviceInput alloc] initWithDevice:captureDevice error:&error];
 
     if (!self.videoInput){
@@ -93,6 +84,7 @@ AVCaptureStillImageOutput* stillImageOutput;
     // 画像への出力を作成し、セッションに追加
     stillImageOutput = [[AVCaptureStillImageOutput alloc] init];
     [self.videoSession addOutput:stillImageOutput];
+    [self.videoSession addObserver:self forKeyPath:@"running" options:NSKeyValueObservingOptionNew context:nil];
 
     // キャプチャーセッションから入力のプレビュー表示を作成
     AVCaptureVideoPreviewLayer *captureVideoPreviewLayer = [[AVCaptureVideoPreviewLayer alloc] initWithSession:self.videoSession];
@@ -104,18 +96,6 @@ AVCaptureStillImageOutput* stillImageOutput;
     previewLayer.masksToBounds = YES;
     [previewLayer addSublayer:captureVideoPreviewLayer];
 
-    //    self.videoOutput = [[AVCaptureVideoDataOutput alloc] init];
-    //    [self.videoSession addOutput:self.videoOutput];
-
-    //    dispatch_queue_t queue = dispatch_queue_create("be.k0suke.ticamera.captureQueue", NULL);
-    //    [self.videoOutput setAlwaysDiscardsLateVideoFrames:TRUE];
-    //    [self.videoOutput setSampleBufferDelegate:self queue:queue];
-
-    //    self.videoOutput.videoSettings = @{(id)kCVPixelBufferPixelFormatTypeKey : [NSNumber numberWithInt:kCVPixelFormatType_32BGRA]};
-
-    //    AVCaptureConnection *videoConnection = [self.videoOutput connectionWithMediaType:AVMediaTypeVideo];
-    //    videoConnection.videoMinFrameDuration = CMTimeMake(1, [TiUtils intValue:[self.proxy valueForKey:@"frameDuration"] def:16]);
-
     isCameraInputOutput = YES;
 
     [self.videoSession startRunning];
@@ -125,18 +105,13 @@ AVCaptureStillImageOutput* stillImageOutput;
 
 
 #ifndef __i386__
--(AVCaptureDevice *)deviceWithPosition:(AVCaptureDevicePosition) position
-{
+-(AVCaptureDevice *)deviceWithPosition:(AVCaptureDevicePosition) position{
     NSArray *Devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
-
-    for (AVCaptureDevice *Device in Devices)
-    {
-        if ([Device position] == position)
-        {
+    for (AVCaptureDevice *Device in Devices){
+        if ([Device position] == position){
             return Device;
         }
     }
-
     return nil;
 }
 #endif
@@ -262,14 +237,71 @@ AVCaptureStillImageOutput* stillImageOutput;
 }
 
 
+// flash オン
+-(void)setFlashModeOn:(id)args{
+    [self _setFlashMode:AVCaptureFlashModeOn];
+}
+// flash オフ
+-(void)setFlashModeOff:(id)args{
+    [self _setFlashMode:AVCaptureFlashModeOff];
+}
+// flash オート
+-(void)setFlashModeAuto:(id)args{
+    [self _setFlashMode:AVCaptureFlashModeAuto];
+}
+
+// flashモード設定 内部処理
+-(void)_setFlashMode:(AVCaptureFlashMode)flashMode{
+    if( [captureDevice isFlashModeSupported:flashMode] ){
+        NSError *error;
+        if( [captureDevice lockForConfiguration:&error] ){
+            captureDevice.flashMode = flashMode;
+            [captureDevice unlockForConfiguration];
+        }
+    }
+}
+
+
+// フォーカス完了時にイベント発行
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
+    NSLog( @"CapturedeviceFinderProxy observeValueForKeyPath:%@ change=%@", keyPath, change );
+    if ([keyPath isEqual:@"adjustingFocus"]) {
+        if ([[change objectForKey:NSKeyValueChangeNewKey] boolValue] == YES ){
+            [self.proxy fireEvent:@"focusStart" withObject:nil];
+        } else {
+            [self.proxy fireEvent:@"focusComplete" withObject:nil];
+        }
+    } else if( [keyPath isEqual:@"running"] ){
+        if( [[change objectForKey:NSKeyValueChangeNewKey] boolValue] == YES ){
+            [self.proxy fireEvent:@"sessionStart" withObject:nil];// カメラ起動完了
+        } else {
+            [self.proxy fireEvent:@"sessionStop" withObject:nil];// カメラ終了完了
+        }
+    } else if( [keyPath isEqual:@"adjustingExposure"] ){
+        if (adjustingExposure){
+            if ([[change objectForKey:NSKeyValueChangeNewKey] boolValue] == NO){
+                adjustingExposure = NO;
+                AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+
+                NSError *error = nil;
+                if ([device lockForConfiguration:&error]){
+                    [device setExposureMode:AVCaptureExposureModeLocked];
+                    [device unlockForConfiguration];
+                }
+            }
+        }
+    }
+}
+
+
 //UIImageをリサイズ
 - (UIImage*)resizeImage:(UIImage *)img rect:(CGRect)rect{
     UIGraphicsBeginImageContext(rect.size);
-    
+
     // 補完処理を省略してリサイズを高速化
     //    CGContextRef context = UIGraphicsGetCurrentContext();
     //	CGContextSetInterpolationQuality(context, kCGInterpolationNone);
-    
+
     [img drawInRect:rect];
     UIImage* resizedImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -856,32 +888,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     }
 }
 
--(void)observeValueForKeyPath:(NSString *)keyPath
-                     ofObject:(id)object
-                       change:(NSDictionary *)change
-                      context:(void *)context
-{
-    if (!adjustingExposure)
-    {
-        return;
-    }
 
-	if ([keyPath isEqual:@"adjustingExposure"])
-    {
-		if ([[change objectForKey:NSKeyValueChangeNewKey] boolValue] == NO)
-        {
-            adjustingExposure = NO;
-            AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
-
-			NSError *error = nil;
-			if ([device lockForConfiguration:&error])
-            {
-				[device setExposureMode:AVCaptureExposureModeLocked];
-				[device unlockForConfiguration];
-			}
-		}
-	}
-}
 #endif
 
 @end
