@@ -32,6 +32,9 @@
 @property (nonatomic, strong) AVAssetWriterInputPixelBufferAdaptor *recordingAdaptor;
 @property (nonatomic, strong) NSTimer *intervalTimer;
 
+-(id)isFrontCamera:(id)args;
+-(id)isBackCamera:(id)args;
+-(id)isTorch:(id)args;
 
 
 @end
