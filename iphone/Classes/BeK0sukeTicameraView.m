@@ -25,13 +25,6 @@ AVCaptureDevice *captureDevice;
 
 -(id)init{
     self = [super init];
-#ifndef __i386__
-    if (self){
-        UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapDetected:)];
-        [self addGestureRecognizer:tapRecognizer];
-        [tapRecognizer release];
-    }
-#endif
     return self;
 }
 
@@ -287,6 +280,36 @@ AVCaptureDevice *captureDevice;
         }
     }
 }
+
+
+// 露出とフォーカスを指定した座標( 0〜1.0 )に合わせる
+- (void)focusAndExposureAtPoint:(id)args{
+    NSLog( @"CapturedeviceFinderProxy focusAndExposureAtPoint" );
+    
+    // JavaScript からわたってきたパラメータを解釈
+    ENSURE_SINGLE_ARG( args, NSDictionary );
+    NSLog( @"%@", args );
+    NSNumber* px = [args objectForKey:@"x"];
+    NSNumber* py = [args objectForKey:@"y"];
+    CGPoint point = CGPointMake( px.floatValue, py.floatValue );
+    
+    AVCaptureDevice *device = captureDevice;
+    if ([device isFocusPointOfInterestSupported] && [device isFocusModeSupported:AVCaptureFocusModeAutoFocus]) {
+        NSError *error;
+        if ([device lockForConfiguration:&error]) {
+            // フォーカス
+            [device setFocusPointOfInterest:point];
+            [device setFocusMode:AVCaptureFocusModeAutoFocus];
+            
+            // 露出
+            [device setExposurePointOfInterest:point];
+            [device setExposureMode:AVCaptureExposureModeContinuousAutoExposure];
+            
+            [device unlockForConfiguration];
+        }
+    }
+}
+
 
 
 // フォーカス完了時にイベント発行
