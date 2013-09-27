@@ -102,6 +102,7 @@ var capture = Ti.UI.createButton({
 $.win.add(capture);
 
 capture.addEventListener('click', function(){
+	console.log("capture!!!");
 	cameraView.takePicture({
 		saveToPhotoGallery: save.getValue(),	// default false
 		shutterSound: shutter.getValue(),		// default true

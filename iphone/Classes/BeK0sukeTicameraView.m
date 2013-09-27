@@ -69,12 +69,10 @@ AVCaptureStillImageOutput* stillImageOutput;
     NSError *error = nil;
     
     
-    AVCaptureDevice *captureDevice = [self deviceWithPosition: [TiUtils intValue:[self.proxy valueForKey:@"cameraPosition"]
-                                                                             def:AVCaptureDevicePositionBack]];
+    AVCaptureDevice *captureDevice = [self deviceWithPosition: [TiUtils intValue:[self.proxy valueForKey:@"cameraPosition"] def:AVCaptureDevicePositionBack]];
     self.videoInput = [[AVCaptureDeviceInput alloc] initWithDevice:captureDevice error:&error];
     
-    if (!self.videoInput)
-    {
+    if (!self.videoInput){
         NSLog(@"[ERROR] %@", error);
         return;
     }
@@ -93,7 +91,7 @@ AVCaptureStillImageOutput* stillImageOutput;
                        context:nil];
     
     // 画像への出力を作成し、セッションに追加
-    AVCaptureStillImageOutput* stillImageOutput = [[AVCaptureStillImageOutput alloc] init];
+    stillImageOutput = [[AVCaptureStillImageOutput alloc] init];
     [self.videoSession addOutput:stillImageOutput];
     
     // キャプチャーセッションから入力のプレビュー表示を作成
@@ -143,10 +141,8 @@ AVCaptureStillImageOutput* stillImageOutput;
 
 
 
--(void)takePicture:(id)args
-{
-#ifndef __i386__
-    NSLog( @"CapturedeviceFinderProxy takePhoto" );
+-(void)takePicture:(id)args{
+    NSLog( @"objc takePhoto" );
     
     if( waitingForShutter ){
         NSLog( @"前回のシャッターが切れるのを待っているので新しく撮影処理は開始しません" );
@@ -200,13 +196,11 @@ AVCaptureStillImageOutput* stillImageOutput;
                                                       [self.proxy fireEvent:@"imageProcessed" withObject:dic];
                                                       
                                                       if ([TiUtils boolValue:[args valueForKey:@"saveToPhotoGallery"] def:NO]){
-//                                                          ALAssetsLibrary *library = [[[ALAssetsLibrary alloc] init] autorelease];
-//                                                          [library writeImageToSavedPhotosAlbum:image.CGImage orientation:image.imageOrientation completionBlock:^(NSURL *assetURL, NSError *error){}];
+                                                          ALAssetsLibrary *library = [[[ALAssetsLibrary alloc] init] autorelease];
+                                                          [library writeImageToSavedPhotosAlbum:image.CGImage orientation:image.imageOrientation completionBlock:^(NSURL *assetURL, NSError *error){}];
                                                       }
                                                   }
      ];
-    
-#endif
 }
 
 
