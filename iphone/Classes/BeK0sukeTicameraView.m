@@ -172,29 +172,28 @@ AVCaptureStillImageOutput* stillImageOutput;
 
                                                       // フロントカメラならフリップ
                                                       TiBlob* original_blob;
-                                                      //                                                 if( frontCameraMode ){
-                                                      //                                                     NSLog( @"フリップします" );
-                                                      //                                                     //                                                     image = [UIImage imageWithCGImage:image.CGImage scale:1.0 orientation: UIImageOrientationLeftMirrored];
-                                                      //                                                     NSData* content_data = UIImageJPEGRepresentation( image, 0.8 );
-                                                      //                                                     original_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
-                                                      //                                                 } else {
-                                                      //                                                     original_blob = [[[TiBlob alloc] initWithData:data mimetype:@"image/jpeg"] autorelease];
-                                                      //                                                 }
+//                                                      if( [self _isFrontCamera] ){
+//                                                          NSLog( @"フリップします" );
+//                                                          image = [UIImage imageWithCGImage:image.CGImage scale:1.0 orientation: UIImageOrientationLeftMirrored];
+//                                                          NSData* content_data = UIImageJPEGRepresentation( image, 0.8 );
+//                                                          original_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
+//                                                      } else {
+//                                                          original_blob = [[[TiBlob alloc] initWithData:data mimetype:@"image/jpeg"] autorelease];
+//                                                      }
                                                       original_blob = [[[TiBlob alloc] initWithData:data mimetype:@"image/jpeg"] autorelease];
 
-                                                      // 送信用データ(縦852pxサイズ)を作成
-                                                      //                                                 UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 640, 852)];// 重い
-                                                      //                                                 NSData* content_data = UIImageJPEGRepresentation( content_img, 0.8 );
-                                                      //                                                 TiBlob* content_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
+                                                      // 送信用データ(縦1136pxサイズ)を作成
+//                                                      UIImage* content_img = [self resizeImage:image rect:CGRectMake(0, 0, 852, 1136)];// 重い
+//                                                      NSData* content_data = UIImageJPEGRepresentation( content_img, 0.8 );
+//                                                      TiBlob* content_blob = [[[TiBlob alloc] initWithData:content_data mimetype:@"image/jpeg"] autorelease];
 
                                                       // サムネイルのjpegデータを作成
-                                                      //                                                 UIImage* thumbnail_img = [self resizeImage:image rect:CGRectMake(0, 0, 150, 200)];
                                                       UIImage* thumbnail_img = [self imageByScalingAndCropping:image ForSize:CGSizeMake(150, 150)];
                                                       NSData *thumbnail_data = UIImageJPEGRepresentation( thumbnail_img, 0.8 );
                                                       TiBlob* thumbnail_blob = [[[TiBlob alloc] initWithData:thumbnail_data mimetype:@"image/jpeg"] autorelease];
 
                                                       // イベント発行
-                                                      NSDictionary *dic = @{@"original":original_blob, @"content":original_blob, @"thumbnail":thumbnail_blob, @"key2":@"value2"};
+                                                      NSDictionary *dic = @{@"original":original_blob, @"content":thumbnail_blob, @"thumbnail":thumbnail_blob, @"key2":@"value2"};
                                                       [self.proxy fireEvent:@"imageProcessed" withObject:dic];
 
                                                       if ([TiUtils boolValue:[args valueForKey:@"saveToPhotoGallery"] def:NO]){
@@ -263,8 +262,19 @@ AVCaptureStillImageOutput* stillImageOutput;
 }
 
 
-
-
+//UIImageをリサイズ
+- (UIImage*)resizeImage:(UIImage *)img rect:(CGRect)rect{
+    UIGraphicsBeginImageContext(rect.size);
+    
+    // 補完処理を省略してリサイズを高速化
+    //    CGContextRef context = UIGraphicsGetCurrentContext();
+    //	CGContextSetInterpolationQuality(context, kCGInterpolationNone);
+    
+    [img drawInRect:rect];
+    UIImage* resizedImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return resizedImage;
+}
 
 
 
@@ -340,21 +350,20 @@ AVCaptureStillImageOutput* stillImageOutput;
  }
  */
 
--(id)isFrontCamera:(id)args
-{
-#ifndef __i386__
-    if ([[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo] count] > 1)
-    {
-        NSError *error = nil;
+-(id)isFrontCamera:(id)args{
+    return NUMBOOL([self _isFrontCamera]);
+}
 
+-(BOOL)_isFrontCamera{
+#ifndef __i386__
+    if ([[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo] count] > 1){
+        NSError *error = nil;
         AVCaptureDevicePosition position = [[self.videoInput device] position];
-        if (position == AVCaptureDevicePositionFront)
-        {
-            return NUMBOOL(YES);
+        if (position == AVCaptureDevicePositionFront){
+            return YES;
         }
     }
-
-    return NUMBOOL(NO);
+    return NO;
 #endif
 }
 
